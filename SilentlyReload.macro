@@ -1,0 +1,6 @@
+Sub SilentlyReload
+    ThisComponent.setModified(False)  'Ignore changes'
+    document = ThisComponent.CurrentController.Frame
+    dispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+    dispatcher.executeDispatch(document, ".uno:Reload", "", 0, Array())
+End Sub
