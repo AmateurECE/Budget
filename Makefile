@@ -1,13 +1,13 @@
 ###############################################################################
-# NAME:             meson.build
+# NAME:		    Makefile
 #
-# AUTHOR:           Ethan D. Twardy <ethan.twardy@gmail.com>
+# AUTHOR:	    Ethan D. Twardy <ethan.twardy@gmail.com>
 #
-# DESCRIPTION:      Meson build script
+# DESCRIPTION:	    High-level Makefile used to invoke Meson
 #
-# CREATED:          10/28/2021
+# CREATED:	    10/28/2021
 #
-# LAST EDITED:      10/28/2021
+# LAST EDITED:	    10/28/2021
 #
 # Copyright 2021, Ethan D. Twardy
 #
@@ -25,12 +25,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-project('budget', 'c')
-executable(
-  'budget',
-  'source/main.c',
-  dependencies: dependency('libR'),
-  c_args: ['-O0', '-g', '-Wall', '-Wextra']
-)
+R_HOME=/usr/lib64/R
+CC=clang
+export CC
+
+build: meson.build
+	CFLAGS=-DR_HOME=$(R_HOME) meson setup $@
 
 ###############################################################################
