@@ -19,24 +19,24 @@ CELLRANGE_RE = re.compile(r'([A-Z]{1,3})([0-9]{1,7})')
 COLUMN_MAX = 1023
 ROW_MAX = 1048575
 
-RowIteratorFn = lambda index, dim, access: access.getCellByPosition(dim, index)
+RowIteratorFn = lambda index, dim, access: access.getCellByPosition(index, dim)
 ColumnIteratorFn = lambda index, dim, access: access.getCellByPosition(
-    index, dim)
+    dim, index)
 
 class CellListIterator:
-    def __init__(self, row, columns, xIndexAccess, iteratorFn):
-        self.row = row
-        self.columns = columns
+    def __init__(self, dim, maxIndex, xIndexAccess, iteratorFn):
+        self.dim = dim
+        self.maxIndex = maxIndex
         self.index = 0
         self.xIndexAccess = xIndexAccess
         self.iteratorFn = iteratorFn
 
     def __next__(self):
-        if self.index >= self.columns:
+        if self.index >= self.maxIndex:
             raise StopIteration()
         index = self.index
         self.index += 1
-        return self.iteratorFn(index, self.row, self.xIndexAccess)
+        return self.iteratorFn(index, self.dim, self.xIndexAccess)
 
 class CellMatrixIterator:
     def __init__(self, rows, columns, xIndexAccess):
@@ -82,8 +82,8 @@ def getCoordinatesForCellSpec(spec):
 
 def getCellRangeForMatrixSpec(spec, xSheet):
     firstSpec, secondSpec = tuple(spec.split(':'))
-    firstRow, firstColumn = getCoordinatesForCellSpec(firstSpec)
-    secondRow, secondColumn = getCoordinatesForCellSpec(secondSpec)
+    firstColumn, firstRow = getCoordinatesForCellSpec(firstSpec)
+    secondColumn, secondRow = getCoordinatesForCellSpec(secondSpec)
     xIndexAccess = xSheet.getCellRangeByName(spec)
     if firstRow == secondRow:
         return CellRangeContainer(lambda: CellListIterator(
