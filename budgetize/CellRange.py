@@ -19,31 +19,55 @@ CELLRANGE_RE = re.compile(r'([A-Z]{1,3})([0-9]{1,7})')
 COLUMN_MAX = 1023
 ROW_MAX = 1048575
 
-class CellRangeIterator:
-    def __init__(self, items, xIndexAccess, iterType):
-        self.items = items
-        self.xIndexAccess = xIndexAccess
-        self.iterType = iterType
+class CellRowIterator:
+    def __init__(self, row, columns, xIndexAccess):
+        self.row = row
+        self.columns = columns
         self.index = 0
+        self.xIndexAccess = xIndexAccess
 
     def __next__(self):
-        if self.index >= len(self.items):
+        if self.index >= self.columns:
             raise StopIteration()
         index = self.index
         self.index += 1
-        if self.iterType == 'list':
-            row, column = self.items[index]
-            return self.xIndexAccess.getCellByPosition(row, column)
-        return self.items[index]
+        return self.xIndexAccess.getCellByPosition(self.row, index)
+
+class CellColumnIterator:
+    def __init__(self, column, rows, xIndexAccess):
+        self.rows = rows
+        self.column = column
+        self.index = 0
+        self.xIndexAccess = xIndexAccess
+
+    def __next__(self):
+        if self.index >= self.rows:
+            raise StopIteration()
+        index = self.index
+        self.index += 1
+        return self.xIndexAccess.getCellByPosition(index, self.column)
+
+class CellMatrixIterator:
+    def __init__(self, rows, columns, xIndexAccess):
+        self.rows = rows
+        self.columns = columns
+        self.index = 0
+        self.xIndexAccess = xIndexAccess
+
+    def __next__(self):
+        if self.index >= self.rows:
+            raise StopIteration()
+        index = self.index
+        self.index += 1
+        return CellRangeContainer(lambda: CellRowIterator(
+            index, self.columns, self.xIndexAccess))
 
 class CellRangeContainer:
-    def __init__(self, items, xIndexAccess, iterType):
-        self.items = items
-        self.xIndexAccess = xIndexAccess
-        self.iterType = iterType
+    def __init__(self, iteratorFn):
+        self.iteratorFn = iteratorFn
 
     def __iter__(self):
-        return CellRangeIterator(self.items, self.xIndexAccess, self.iterType)
+        return self.iteratorFn()
 
 def getColumnFromString(rowString):
     rowBytes = bytearray(rowString, 'ascii')
@@ -71,12 +95,12 @@ def getCellRangeForMatrixSpec(spec, xSheet):
     secondRow, secondColumn = getCoordinatesForCellSpec(secondSpec)
     xIndexAccess = xSheet.getCellRangeByName(spec)
     if firstRow == secondRow:
-        return CellRangeContainer([(firstRow, i) for i in range(
-            firstColumn, secondColumn + 1)], xIndexAccess, 'list')
-    ranges = []
-    for i in range(firstRow, secondRow + 1):
-        ranges.append(CellRangeContainer([(j, i) for j in range(
-            firstColumn, secondColumn + 1)], xIndexAccess, 'list'))
-    return CellRangeContainer(ranges, None, 'matrix')
+        return CellRangeContainer(lambda: CellRowIterator(
+            0, secondColumn - firstColumn, xIndexAccess))
+    elif firstColumn == secondColumn:
+        return CellRangeContainer(lambda: CellColumnIterator(
+            0, secondRow - firstRow, xIndexAccess))
+    return CellRangeContainer(lambda: CellMatrixIterator(
+        secondRow - firstRow, secondColumn - firstColumn, xIndexAccess))
 
 ###############################################################################

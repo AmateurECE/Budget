@@ -27,7 +27,7 @@ def main():
     desktop = context.ServiceManager.createInstanceWithContext(
         'com.sun.star.frame.Desktop', context)
     xSheetDoc = desktop.getCurrentComponent()
-    budgetizer = Budgetizer(xSheetDoc.CurrentController)
+    budgetizer = Budgetizer(xSheetDoc)
     budgetizer.budgetize()
 
 if __name__ == '__main__':

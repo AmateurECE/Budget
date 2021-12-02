@@ -13,8 +13,7 @@
 from budgetize.Budgetizer import Budgetizer
 
 def runBudgetizer():
-    xSheetDoc = XSCRIPTCONTEXT.getDesktop().getCurrentComponent()
-    budgetizer = Budgetizer(xSheetDoc.CurrentController)
+    budgetizer = Budgetizer(XSCRIPTCONTEXT.getDesktop().getCurrentComponent())
     budgetizer.budgetize()
 
 # Lists the scripts, that shall be visible inside OOo. Can be omitted, if all
