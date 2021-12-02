@@ -10,7 +10,7 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/01/2021
+# LAST EDITED:      12/02/2021
 ###
 
 import re
@@ -19,33 +19,24 @@ CELLRANGE_RE = re.compile(r'([A-Z]{1,3})([0-9]{1,7})')
 COLUMN_MAX = 1023
 ROW_MAX = 1048575
 
-class CellRowIterator:
-    def __init__(self, row, columns, xIndexAccess):
+RowIteratorFn = lambda index, dim, access: access.getCellByPosition(dim, index)
+ColumnIteratorFn = lambda index, dim, access: access.getCellByPosition(
+    index, dim)
+
+class CellListIterator:
+    def __init__(self, row, columns, xIndexAccess, iteratorFn):
         self.row = row
         self.columns = columns
         self.index = 0
         self.xIndexAccess = xIndexAccess
+        self.iteratorFn = iteratorFn
 
     def __next__(self):
         if self.index >= self.columns:
             raise StopIteration()
         index = self.index
         self.index += 1
-        return self.xIndexAccess.getCellByPosition(self.row, index)
-
-class CellColumnIterator:
-    def __init__(self, column, rows, xIndexAccess):
-        self.rows = rows
-        self.column = column
-        self.index = 0
-        self.xIndexAccess = xIndexAccess
-
-    def __next__(self):
-        if self.index >= self.rows:
-            raise StopIteration()
-        index = self.index
-        self.index += 1
-        return self.xIndexAccess.getCellByPosition(index, self.column)
+        return self.iteratorFn(index, self.row, self.xIndexAccess)
 
 class CellMatrixIterator:
     def __init__(self, rows, columns, xIndexAccess):
@@ -59,8 +50,8 @@ class CellMatrixIterator:
             raise StopIteration()
         index = self.index
         self.index += 1
-        return CellRangeContainer(lambda: CellRowIterator(
-            index, self.columns, self.xIndexAccess))
+        return CellRangeContainer(lambda: CellListIterator(
+            index, self.columns, self.xIndexAccess, RowIteratorFn))
 
 class CellRangeContainer:
     def __init__(self, iteratorFn):
@@ -95,11 +86,11 @@ def getCellRangeForMatrixSpec(spec, xSheet):
     secondRow, secondColumn = getCoordinatesForCellSpec(secondSpec)
     xIndexAccess = xSheet.getCellRangeByName(spec)
     if firstRow == secondRow:
-        return CellRangeContainer(lambda: CellRowIterator(
-            0, secondColumn - firstColumn, xIndexAccess))
-    elif firstColumn == secondColumn:
-        return CellRangeContainer(lambda: CellColumnIterator(
-            0, secondRow - firstRow, xIndexAccess))
+        return CellRangeContainer(lambda: CellListIterator(
+            0, secondColumn - firstColumn, xIndexAccess, RowIteratorFn))
+    if firstColumn == secondColumn:
+        return CellRangeContainer(lambda: CellListIterator(
+            0, secondRow - firstRow, xIndexAccess, ColumnIteratorFn))
     return CellRangeContainer(lambda: CellMatrixIterator(
         secondRow - firstRow, secondColumn - firstColumn, xIndexAccess))
 
