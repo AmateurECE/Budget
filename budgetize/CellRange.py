@@ -87,11 +87,12 @@ def getCellRangeForMatrixSpec(spec, xSheet):
     xIndexAccess = xSheet.getCellRangeByName(spec)
     if firstRow == secondRow:
         return CellRangeContainer(lambda: CellListIterator(
-            0, secondColumn - firstColumn, xIndexAccess, RowIteratorFn))
+            0, secondColumn - firstColumn + 1, xIndexAccess, RowIteratorFn))
     if firstColumn == secondColumn:
         return CellRangeContainer(lambda: CellListIterator(
-            0, secondRow - firstRow, xIndexAccess, ColumnIteratorFn))
+            0, secondRow - firstRow + 1, xIndexAccess, ColumnIteratorFn))
     return CellRangeContainer(lambda: CellMatrixIterator(
-        secondRow - firstRow, secondColumn - firstColumn, xIndexAccess))
+        secondRow - firstRow + 1, secondColumn - firstColumn + 1,
+        xIndexAccess))
 
 ###############################################################################
