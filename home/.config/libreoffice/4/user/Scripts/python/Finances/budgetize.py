@@ -7,17 +7,18 @@
 #
 # CREATED:          11/30/2021
 #
-# LAST EDITED:      11/30/2021
+# LAST EDITED:      12/01/2021
 ###
 
-import toml
+from budgetize.Budgetizer import Budgetizer
 
-def testBudgetize():
-    xSheet = XSCRIPTCONTEXT.getDocument().getCurrentController()
-    xSheet.getSelection().getCellByPosition(0, 0).setString('Budgetize!')
+def runBudgetizer():
+    xSheetDoc = XSCRIPTCONTEXT.getDesktop().getCurrentComponent()
+    budgetizer = Budgetizer(xSheetDoc.CurrentController)
+    budgetizer.budgetize()
 
 # Lists the scripts, that shall be visible inside OOo. Can be omitted, if all
 # functions shall be visible.
-g_exportedScripts = testBudgetize,
+g_exportedScripts = runBudgetizer,
 
 ###############################################################################

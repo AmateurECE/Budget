@@ -2,6 +2,21 @@
 
 This repo is set up to be cloned as a Homeshick castle.
 
+# Running the Budgetizer in Development
+
+First, start up an Office server instance:
+
+```
+$ soffice --calc \
+    --accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"
+```
+
+Next, run the script, which will load the package and execute the budgetizer:
+
+```
+$ python3 DevelopmentRunner.py
+```
+
 # Silently Reloading the Document
 
 The Basic macro to do this can be found in `SilentlyReload.macro`. To install:
