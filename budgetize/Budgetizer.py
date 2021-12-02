@@ -10,15 +10,17 @@
 # LAST EDITED:      12/01/2021
 ###
 
+from .CellRange import getCellRangeForMatrixSpec
+
 class Budgetizer:
     def __init__(self, xSheetDocController):
         self.sheetDocController = xSheetDocController
 
     def budgetize(self):
         xSheet = self.sheetDocController.ActiveSheet
-        length = 2
-        xCellRange = xSheet.getCellRangeByName(f'A1:A{length}')
-        for i in range(0, length):
-            xCellRange.getCellByPosition(0, i).String = 'Budgetize!'
+        matrix = getCellRangeForMatrixSpec("A1:B2", xSheet)
+        for record in matrix:
+            for cell in record:
+                cell.String = 'Budgetize!'
 
 ###############################################################################
