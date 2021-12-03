@@ -10,7 +10,7 @@
 # LAST EDITED:      12/02/2021
 ###
 
-from .Sheet import SheetTable
+from .sheet import SheetTable
 
 class Budgetizer:
     def __init__(self, xSheetDoc):

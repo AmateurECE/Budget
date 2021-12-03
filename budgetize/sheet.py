@@ -10,7 +10,7 @@
 # LAST EDITED:      12/02/2021
 ###
 
-from .CellRange import CellArray, CellMatrix
+from .cellrange import CellArray, CellMatrix
 from . import cellname
 
 class EmptyFormError(Exception):

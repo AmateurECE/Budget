@@ -7,10 +7,10 @@
 #
 # CREATED:          11/30/2021
 #
-# LAST EDITED:      12/01/2021
+# LAST EDITED:      12/02/2021
 ###
 
-from budgetize.Budgetizer import Budgetizer
+from budgetize.budgetizer import Budgetizer
 
 def runBudgetizer():
     budgetizer = Budgetizer(XSCRIPTCONTEXT.getDesktop().getCurrentComponent())

@@ -11,11 +11,11 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/01/2021
+# LAST EDITED:      12/02/2021
 ###
 
 import uno
-from budgetize.Budgetizer import Budgetizer
+from budgetize.budgetizer import Budgetizer
 
 def main():
     """Run the Budgetizer attached to a running Office server instance"""
