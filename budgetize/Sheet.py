@@ -17,10 +17,11 @@ class EmptyFormError(Exception):
     pass
 
 # TODO: Custom iterator class that allows accessing via column header
+# TODO; Convert coordinates to name instead of math
 
 class SheetTable:
     """Represents a group of non-empty cells with named columns"""
-    def __init__(self, topLeft, rightmostColumn, xSheet):
+    def __init__(self, topLeft, tableWidth, xSheet):
         # Get the coordinates (in zero-indexed form)
         topLeftColumn, topLeftRow = getCoordinatesForCellSpec(topLeft)
 
@@ -42,11 +43,12 @@ class SheetTable:
             raise EmptyFormError()
 
         # Grab headers and instantiate an inner container
-        headerSpec = f'{topLeft}:{rightmostColumn}{topLeftRow}'
+        rightColumn = getColumnNameFromIndex(topLeftColumn + tableWidth - 1)
+        headerSpec = f'{topLeft}:{rightColumn}{topLeftRow}'
         self.headers = CellArray(spec=headerSpec, xSheet=xSheet)
         dataSpec = (
             f'{topLeftColumnName}{topLeftRow + 1}'
-            + f':{rightmostColumn}{numberOfRows + topLeftRow - 1}'
+            + f':{rightColumn}{numberOfRows + topLeftRow - 1}'
         )
         self.container = CellMatrix(dataSpec, xSheet)
 

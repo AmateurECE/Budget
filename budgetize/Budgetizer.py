@@ -19,9 +19,9 @@ class Budgetizer:
 
     def budgetize(self):
         nonRecurringForm = SheetTable(
-            "A1", "D", self.sheetDoc.getSheets().getByName("Non Recurring"))
+            "A1", 4, self.sheetDoc.getSheets().getByName("Non Recurring"))
         beginningBalances = SheetTable(
-            "A2", "B", self.sheetDoc.getSheets().getByName("Balances"))
+            "A2", 2, self.sheetDoc.getSheets().getByName("Balances"))
         for record in nonRecurringForm:
             for cell in record:
                 print(cell.String + ',', end='')
