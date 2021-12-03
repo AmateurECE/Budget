@@ -11,29 +11,25 @@
 ###
 
 from .CellRange import CellArray, CellMatrix, ROW_MAX, \
-    getCoordinatesForCellSpec, getColumnNameFromIndex
+    getCoordinatesFromCellName, getColumnNameFromIndex, \
+    getCellNameFromCoordinates
 
 class EmptyFormError(Exception):
     pass
 
 # TODO: Custom iterator class that allows accessing via column header
-# TODO; Convert coordinates to name instead of math
+# TODO: Move Cell/coordinates logic into new module
 
 class SheetTable:
     """Represents a group of non-empty cells with named columns"""
     def __init__(self, topLeft, tableWidth, xSheet):
         # Get the coordinates (in zero-indexed form)
-        topLeftColumn, topLeftRow = getCoordinatesForCellSpec(topLeft)
-
-        # Recondition them back to actual table coordinates
-        topLeftColumnName = getColumnNameFromIndex(topLeftColumn)
-        topLeftRow += 1
+        topLeftColumn, topLeftRow = getCoordinatesFromCellName(topLeft)
 
         # Get the number of rows in the table
         numberOfRows = 0
         dataProbeSpec = (
-            f'{topLeftColumnName}{topLeftRow}'
-            + f':{topLeftColumnName}{ROW_MAX}'
+            f'{topLeft}:' + getCellNameFromCoordinates(topLeftColumn, ROW_MAX)
         )
         for cell in CellArray(spec=dataProbeSpec, xSheet=xSheet):
             if not cell.String:
@@ -43,12 +39,16 @@ class SheetTable:
             raise EmptyFormError()
 
         # Grab headers and instantiate an inner container
-        rightColumn = getColumnNameFromIndex(topLeftColumn + tableWidth - 1)
-        headerSpec = f'{topLeft}:{rightColumn}{topLeftRow}'
+        rightColumn = topLeftColumn + tableWidth - 1
+        headerSpec = (
+            f'{topLeft}:'
+            + getCellNameFromCoordinates(rightColumn, topLeftRow)
+        )
         self.headers = CellArray(spec=headerSpec, xSheet=xSheet)
         dataSpec = (
-            f'{topLeftColumnName}{topLeftRow + 1}'
-            + f':{rightColumn}{numberOfRows + topLeftRow - 1}'
+            getCellNameFromCoordinates(topLeftColumn, topLeftRow + 1)
+            + ':' + getCellNameFromCoordinates(
+                rightColumn, numberOfRows + topLeftRow - 1)
         )
         self.container = CellMatrix(dataSpec, xSheet)
 
