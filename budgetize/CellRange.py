@@ -80,7 +80,7 @@ def getCoordinatesForCellSpec(spec):
         return None
     return (column, row)
 
-def getCellRangeForMatrixSpec(spec, xSheet):
+def getCellRangeForListSpec(spec, xSheet):
     firstSpec, secondSpec = tuple(spec.split(':'))
     firstColumn, firstRow = getCoordinatesForCellSpec(firstSpec)
     secondColumn, secondRow = getCoordinatesForCellSpec(secondSpec)
@@ -91,6 +91,19 @@ def getCellRangeForMatrixSpec(spec, xSheet):
     if firstColumn == secondColumn:
         return CellRangeContainer(lambda: CellListIterator(
             0, secondRow - firstRow + 1, xIndexAccess, ColumnIteratorFn))
+    raise RuntimeError(f'Poorly formed spec ({spec}) for list!')
+
+def getCellRangeForMatrixSpec(spec, xSheet):
+    firstSpec, secondSpec = tuple(spec.split(':'))
+    firstColumn, firstRow = getCoordinatesForCellSpec(firstSpec)
+    secondColumn, secondRow = getCoordinatesForCellSpec(secondSpec)
+    xIndexAccess = xSheet.getCellRangeByName(spec)
+    if firstRow == secondRow:
+        return CellRangeContainer(lambda: CellMatrixIterator(
+            1, secondColumn - firstColumn + 1, xIndexAccess))
+    if firstColumn == secondColumn:
+        return CellRangeContainer(lambda: CellMatrixIterator(
+            secondRow - firstRow + 1, 1, xIndexAccess))
     return CellRangeContainer(lambda: CellMatrixIterator(
         secondRow - firstRow + 1, secondColumn - firstColumn + 1,
         xIndexAccess))
