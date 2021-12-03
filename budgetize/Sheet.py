@@ -10,26 +10,26 @@
 # LAST EDITED:      12/02/2021
 ###
 
-from .CellRange import CellArray, CellMatrix, ROW_MAX, \
-    getCoordinatesFromCellName, getColumnNameFromIndex, \
-    getCellNameFromCoordinates
+from .CellRange import CellArray, CellMatrix
+from . import cellname
 
 class EmptyFormError(Exception):
     pass
 
 # TODO: Custom iterator class that allows accessing via column header
-# TODO: Move Cell/coordinates logic into new module
 
 class SheetTable:
     """Represents a group of non-empty cells with named columns"""
     def __init__(self, topLeft, tableWidth, xSheet):
         # Get the coordinates (in zero-indexed form)
-        topLeftColumn, topLeftRow = getCoordinatesFromCellName(topLeft)
+        topLeftColumn, topLeftRow = cellname.getCoordinatesFromCellName(
+            topLeft)
 
         # Get the number of rows in the table
         numberOfRows = 0
         dataProbeSpec = (
-            f'{topLeft}:' + getCellNameFromCoordinates(topLeftColumn, ROW_MAX)
+            f'{topLeft}:' + cellname.getCellNameFromCoordinates(
+                topLeftColumn, cellname.ROW_MAX)
         )
         for cell in CellArray(spec=dataProbeSpec, xSheet=xSheet):
             if not cell.String:
@@ -42,12 +42,12 @@ class SheetTable:
         rightColumn = topLeftColumn + tableWidth - 1
         headerSpec = (
             f'{topLeft}:'
-            + getCellNameFromCoordinates(rightColumn, topLeftRow)
+            + cellname.getCellNameFromCoordinates(rightColumn, topLeftRow)
         )
         self.headers = CellArray(spec=headerSpec, xSheet=xSheet)
         dataSpec = (
-            getCellNameFromCoordinates(topLeftColumn, topLeftRow + 1)
-            + ':' + getCellNameFromCoordinates(
+            cellname.getCellNameFromCoordinates(topLeftColumn, topLeftRow + 1)
+            + ':' + cellname.getCellNameFromCoordinates(
                 rightColumn, numberOfRows + topLeftRow - 1)
         )
         self.container = CellMatrix(dataSpec, xSheet)

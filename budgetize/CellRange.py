@@ -13,11 +13,7 @@
 # LAST EDITED:      12/02/2021
 ###
 
-import re
-
-CELLRANGE_RE = re.compile(r'([A-Z]{1,3})([0-9]{1,7})')
-COLUMN_MAX = 1023
-ROW_MAX = 1048575
+from . import cellname
 
 RowIteratorFn = lambda index, dim, access: access.getCellByPosition(index, dim)
 ColumnIteratorFn = lambda index, dim, access: access.getCellByPosition(
@@ -55,38 +51,6 @@ class CellMatrixIterator:
             iteratorFn=RowIteratorFn
         )
 
-def getIndexFromColumnName(rowString):
-    rowBytes = bytearray(rowString, 'ascii')
-    index = len(rowBytes) - 1
-    value = 0
-    for byte in rowBytes:
-        value += (byte - 64) * (26**index)
-        index -= 1
-    return value - 1
-
-def getColumnNameFromIndex(index):
-    rowBytes = []
-    index += 1
-    while index > 0:
-        rem = index % 26
-        index //= 26
-        rowBytes.insert(0, rem + 64)
-    return bytearray(rowBytes).decode('ascii')
-
-def getCoordinatesFromCellName(spec):
-    match = re.match(CELLRANGE_RE, spec)
-    if not match:
-        return None
-
-    column = getIndexFromColumnName(match.group(1))
-    row = int(match.group(2)) - 1
-    if column > COLUMN_MAX or row > ROW_MAX:
-        return None
-    return (column, row)
-
-def getCellNameFromCoordinates(column, row):
-    return f'{getColumnNameFromIndex(column)}{row + 1}'
-
 class CellArray:
     def __init__(self, **kwargs):
         """Two forms, really:
@@ -102,8 +66,9 @@ class CellArray:
     def initString(self, kwargs):
         spec = kwargs.get('spec', None)
         firstSpec, secondSpec = tuple(spec.split(':'))
-        firstColumn, firstRow = getCoordinatesFromCellName(firstSpec)
-        secondColumn, secondRow = getCoordinatesFromCellName(secondSpec)
+        firstColumn, firstRow = cellname.getCoordinatesFromCellName(firstSpec)
+        secondColumn, secondRow = cellname.getCoordinatesFromCellName(
+            secondSpec)
         self.xIndexAccess = kwargs.get('xSheet', None).getCellRangeByName(spec)
         if firstRow == secondRow:
             self.rows = secondColumn - firstColumn + 1
@@ -132,8 +97,9 @@ class CellArray:
 class CellMatrix:
     def __init__(self, spec, xSheet):
         firstSpec, secondSpec = tuple(spec.split(':'))
-        firstColumn, firstRow = getCoordinatesFromCellName(firstSpec)
-        secondColumn, secondRow = getCoordinatesFromCellName(secondSpec)
+        firstColumn, firstRow = cellname.getCoordinatesFromCellName(firstSpec)
+        secondColumn, secondRow = cellname.getCoordinatesFromCellName(
+            secondSpec)
         self.xIndexAccess = xSheet.getCellRangeByName(spec)
         if firstRow == secondRow:
             self.rows = 1
