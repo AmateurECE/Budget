@@ -10,7 +10,7 @@
 # LAST EDITED:      12/02/2021
 ###
 
-from . import CellRange
+from .CellRange import CellArray, CellMatrix, ROW_MAX
 
 class Budgetizer:
     def __init__(self, xSheetDoc):
@@ -19,26 +19,22 @@ class Budgetizer:
     @staticmethod
     def getNonRecurringForm(xSheet):
         numberOfRows = 0
-        for cell in CellRange.getCellRangeForListSpec(
-                f'A1:A{CellRange.ROW_MAX}', xSheet):
+        for cell in CellArray(spec=f'A1:A{ROW_MAX}', xSheet=xSheet):
             if not cell.String:
                 break
             numberOfRows += 1
-        return CellRange.getCellRangeForMatrixSpec(
-            f'A2:D{numberOfRows}', xSheet)
+        return CellMatrix(f'A2:D{numberOfRows}', xSheet)
 
     @staticmethod
     def getBeginningBalances(xSheet):
         numberOfRows = 0
-        for cell in CellRange.getCellRangeForListSpec(
-                f'A3:A{CellRange.ROW_MAX}', xSheet):
+        for cell in CellArray(spec=f'A3:A{ROW_MAX}', xSheet=xSheet):
             if not cell.String:
                 break
             numberOfRows += 1
         if not numberOfRows:
             raise RuntimeError('No accounts have been configured!')
-        return CellRange.getCellRangeForMatrixSpec(
-            f'A3:B{2 + numberOfRows}', xSheet)
+        return CellMatrix(f'A3:B{2 + numberOfRows}', xSheet)
 
     def budgetize(self):
         nonRecurringForm = Budgetizer.getNonRecurringForm(
@@ -50,8 +46,8 @@ class Budgetizer:
                 print(cell.String + ',', end='')
             print()
         for account in beginningBalances:
-            accountName = account.xIndexAccess.getCellByPosition(0, 0)
-            accountBalance = account.xIndexAccess.getCellByPosition(1, 0)
-            print(f'{accountName.String}: {accountBalance.String}')
+            accountName = account.getItem(0).String
+            accountBalance = account.getItem(1).String
+            print(f'{accountName}: {accountBalance}')
 
 ###############################################################################

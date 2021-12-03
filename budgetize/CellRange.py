@@ -50,15 +50,10 @@ class CellMatrixIterator:
             raise StopIteration()
         index = self.index
         self.index += 1
-        return CellRangeContainer(lambda: CellListIterator(
-            index, self.columns, self.xIndexAccess, RowIteratorFn))
-
-class CellRangeContainer:
-    def __init__(self, iteratorFn):
-        self.iteratorFn = iteratorFn
-
-    def __iter__(self):
-        return self.iteratorFn()
+        return CellArray(
+            dimension=index, rows=self.columns, accessor=self.xIndexAccess,
+            iteratorFn=RowIteratorFn
+        )
 
 def getColumnFromString(rowString):
     rowBytes = bytearray(rowString, 'ascii')
@@ -80,32 +75,71 @@ def getCoordinatesForCellSpec(spec):
         return None
     return (column, row)
 
-def getCellRangeForListSpec(spec, xSheet):
-    firstSpec, secondSpec = tuple(spec.split(':'))
-    firstColumn, firstRow = getCoordinatesForCellSpec(firstSpec)
-    secondColumn, secondRow = getCoordinatesForCellSpec(secondSpec)
-    xIndexAccess = xSheet.getCellRangeByName(spec)
-    if firstRow == secondRow:
-        return CellRangeContainer(lambda: CellListIterator(
-            0, secondColumn - firstColumn + 1, xIndexAccess, RowIteratorFn))
-    if firstColumn == secondColumn:
-        return CellRangeContainer(lambda: CellListIterator(
-            0, secondRow - firstRow + 1, xIndexAccess, ColumnIteratorFn))
-    raise RuntimeError(f'Poorly formed spec ({spec}) for list!')
+class CellArray:
+    def __init__(self, **kwargs):
+        """Two forms, really:
+        1. spec, xSheet, dimension(?)
+        2. columns, accessor, iteratorFn, dimension
+        """
+        self.dimension = kwargs.get('dimension', 0)
+        if 'spec' in kwargs.keys():
+            self.initString(kwargs)
+        else:
+            self.initIndex(kwargs)
 
-def getCellRangeForMatrixSpec(spec, xSheet):
-    firstSpec, secondSpec = tuple(spec.split(':'))
-    firstColumn, firstRow = getCoordinatesForCellSpec(firstSpec)
-    secondColumn, secondRow = getCoordinatesForCellSpec(secondSpec)
-    xIndexAccess = xSheet.getCellRangeByName(spec)
-    if firstRow == secondRow:
-        return CellRangeContainer(lambda: CellMatrixIterator(
-            1, secondColumn - firstColumn + 1, xIndexAccess))
-    if firstColumn == secondColumn:
-        return CellRangeContainer(lambda: CellMatrixIterator(
-            secondRow - firstRow + 1, 1, xIndexAccess))
-    return CellRangeContainer(lambda: CellMatrixIterator(
-        secondRow - firstRow + 1, secondColumn - firstColumn + 1,
-        xIndexAccess))
+    def initString(self, kwargs):
+        spec = kwargs.get('spec', None)
+        firstSpec, secondSpec = tuple(spec.split(':'))
+        firstColumn, firstRow = getCoordinatesForCellSpec(firstSpec)
+        secondColumn, secondRow = getCoordinatesForCellSpec(secondSpec)
+        self.xIndexAccess = kwargs.get('xSheet', None).getCellRangeByName(spec)
+        if firstRow == secondRow:
+            self.rows = secondColumn - firstColumn + 1
+            self.iteratorFn = RowIteratorFn
+        elif firstColumn == secondColumn:
+            self.rows = secondRow - firstRow + 1
+            self.iteratorFn = ColumnIteratorFn
+        else:
+            raise RuntimeError(f'Poorly formed spec ({spec}) for list!')
+
+    def initIndex(self, kwargs):
+        self.rows = kwargs.get('rows', None)
+        self.xIndexAccess = kwargs.get('accessor', None)
+        self.iteratorFn = kwargs.get('iteratorFn', None)
+
+    def __iter__(self):
+        return CellListIterator(
+            self.dimension, self.rows, self.xIndexAccess, self.iteratorFn)
+
+    def getCount(self):
+        return self.rows
+
+    def getItem(self, index):
+        return self.iteratorFn(index, self.dimension, self.xIndexAccess)
+
+class CellMatrix:
+    def __init__(self, spec, xSheet):
+        firstSpec, secondSpec = tuple(spec.split(':'))
+        firstColumn, firstRow = getCoordinatesForCellSpec(firstSpec)
+        secondColumn, secondRow = getCoordinatesForCellSpec(secondSpec)
+        self.xIndexAccess = xSheet.getCellRangeByName(spec)
+        if firstRow == secondRow:
+            self.rows = 1
+            self.columns = secondColumn - firstColumn + 1
+        elif firstColumn == secondColumn:
+            self.rows = secondRow - firstRow + 1
+            self.columns = 1
+        else:
+            self.rows = secondRow - firstRow + 1
+            self.columns = secondColumn - firstColumn + 1
+
+    def __iter__(self):
+        return CellMatrixIterator(self.rows, self.columns, self.xIndexAccess)
+
+    def getCount(self):
+        return self.rows
+
+    def getItem(self, index):
+        raise NotImplementedError()
 
 ###############################################################################
