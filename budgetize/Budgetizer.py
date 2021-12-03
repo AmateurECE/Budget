@@ -11,36 +11,17 @@
 ###
 
 from .CellRange import CellArray, CellMatrix, ROW_MAX
+from .Sheet import SheetTable
 
 class Budgetizer:
     def __init__(self, xSheetDoc):
         self.sheetDoc = xSheetDoc
 
-    @staticmethod
-    def getNonRecurringForm(xSheet):
-        numberOfRows = 0
-        for cell in CellArray(spec=f'A1:A{ROW_MAX}', xSheet=xSheet):
-            if not cell.String:
-                break
-            numberOfRows += 1
-        return CellMatrix(f'A2:D{numberOfRows}', xSheet)
-
-    @staticmethod
-    def getBeginningBalances(xSheet):
-        numberOfRows = 0
-        for cell in CellArray(spec=f'A3:A{ROW_MAX}', xSheet=xSheet):
-            if not cell.String:
-                break
-            numberOfRows += 1
-        if not numberOfRows:
-            raise RuntimeError('No accounts have been configured!')
-        return CellMatrix(f'A3:B{2 + numberOfRows}', xSheet)
-
     def budgetize(self):
-        nonRecurringForm = Budgetizer.getNonRecurringForm(
-            self.sheetDoc.getSheets().getByName("Non Recurring"))
-        beginningBalances = Budgetizer.getBeginningBalances(
-            self.sheetDoc.getSheets().getByName("Balances"))
+        nonRecurringForm = SheetTable(
+            "A1", "D", self.sheetDoc.getSheets().getByName("Non Recurring"))
+        beginningBalances = SheetTable(
+            "A2", "B", self.sheetDoc.getSheets().getByName("Balances"))
         for record in nonRecurringForm:
             for cell in record:
                 print(cell.String + ',', end='')

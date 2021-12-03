@@ -55,7 +55,7 @@ class CellMatrixIterator:
             iteratorFn=RowIteratorFn
         )
 
-def getColumnFromString(rowString):
+def getIndexFromColumnName(rowString):
     rowBytes = bytearray(rowString, 'ascii')
     index = len(rowBytes) - 1
     value = 0
@@ -64,12 +64,21 @@ def getColumnFromString(rowString):
         index -= 1
     return value - 1
 
+def getColumnNameFromIndex(index):
+    rowBytes = []
+    index += 1
+    while index > 0:
+        rem = index % 26
+        index //= 26
+        rowBytes.insert(0, rem + 64)
+    return bytearray(rowBytes).decode('ascii')
+
 def getCoordinatesForCellSpec(spec):
     match = re.match(CELLRANGE_RE, spec)
     if not match:
         return None
 
-    column = getColumnFromString(match.group(1))
+    column = getIndexFromColumnName(match.group(1))
     row = int(match.group(2)) - 1
     if column > COLUMN_MAX or row > ROW_MAX:
         return None
