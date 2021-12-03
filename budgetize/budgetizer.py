@@ -7,7 +7,7 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/02/2021
+# LAST EDITED:      12/03/2021
 ###
 
 from .sheet import SheetTable
@@ -28,6 +28,10 @@ class Budgetizer:
         for account in beginningBalances:
             accountName = account.getItem(0).String
             accountBalance = account.getItem(1).String
+            print(f'{accountName}: {accountBalance}')
+        for account in beginningBalances:
+            accountName = account['Account'].String
+            accountBalance = account['Balance'].String
             print(f'{accountName}: {accountBalance}')
 
 ###############################################################################
