@@ -11,6 +11,7 @@
 ###
 
 from .account import Account
+from .cellformat import NumberFormat
 from .cellname import getCellNameFromCoordinates
 from .cellrange import CellMatrix
 
@@ -46,7 +47,9 @@ class BurndownCalculator:
         next(initialBalanceIter).String = startDate
         next(initialBalanceIter).String = 'Starting Balance'
         for account in accounts:
-            next(initialBalanceIter).Value = accounts[account].getBalance()
+            cell = next(initialBalanceIter)
+            cell.NumberFormat = NumberFormat.CURRENCY
+            cell.Value = accounts[account].getBalance()
         return outputIter
 
     @staticmethod
@@ -59,12 +62,15 @@ class BurndownCalculator:
             next(entry).String = transaction['Date'].String
             next(entry).String = transaction['Description'].String
             for account in accounts:
-                next(entry).Value = accounts[account].getBalance()
+                cell = next(entry)
+                cell.NumberFormat = NumberFormat.CURRENCY
+                cell.Value = accounts[account].getBalance()
 
     @staticmethod
     def writeFinalBalances(beginningBalances, accounts):
         endDate = beginningBalances.getHeaders()[2]
         for record in beginningBalances:
+            record[endDate].NumberFormat = NumberFormat.CURRENCY
             record[endDate].Value = accounts[
                 record['Account'].String].getBalance()
 
