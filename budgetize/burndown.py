@@ -61,6 +61,13 @@ class BurndownCalculator:
             for account in accounts:
                 next(entry).Value = accounts[account].getBalance()
 
+    @staticmethod
+    def writeFinalBalances(beginningBalances, accounts):
+        endDate = beginningBalances.getHeaders()[2]
+        for record in beginningBalances:
+            record[endDate].Value = accounts[
+                record['Account'].String].getBalance()
+
     def run(self):
         startDate = self.beginningBalances.getHeaders()[1]
         accounts = BurndownCalculator.getAccounts(self.beginningBalances,
@@ -78,6 +85,7 @@ class BurndownCalculator:
             startDate, accounts)
         BurndownCalculator.writeBurndownTable(self.nonRecurringForm,
                                               outputIter, accounts)
-        # endDate = self.beginningBalances.getHeaders()[2]
+        # Write final balances
+        BurndownCalculator.writeFinalBalances(self.beginningBalances, accounts)
 
 ###############################################################################
