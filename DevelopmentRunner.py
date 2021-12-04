@@ -11,9 +11,10 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/02/2021
+# LAST EDITED:      12/03/2021
 ###
 
+import code
 import uno
 from budgetize.budgetizer import Budgetizer
 
@@ -27,6 +28,7 @@ def main():
     desktop = context.ServiceManager.createInstanceWithContext(
         'com.sun.star.frame.Desktop', context)
     xSheetDoc = desktop.getCurrentComponent()
+    # code.interact(local=dict(globals(), **locals()))
     budgetizer = Budgetizer(xSheetDoc)
     budgetizer.budgetize()
 

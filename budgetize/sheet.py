@@ -89,4 +89,13 @@ class SheetTable:
     def __iter__(self):
         return SheetTableIterator(self.headers, iter(self.container))
 
+    def getCount(self):
+        return self.container.getCount()
+
+    def getItem(self, index):
+        return self.container.getItem(index)
+
+    def getHeaders(self):
+        return list(self.headers.keys())
+
 ###############################################################################

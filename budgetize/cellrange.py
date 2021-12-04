@@ -10,7 +10,7 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/02/2021
+# LAST EDITED:      12/03/2021
 ###
 
 from . import cellname
@@ -55,7 +55,7 @@ class CellArray:
     def __init__(self, **kwargs):
         """Two forms, really:
         1. spec, xSheet, dimension(?)
-        2. columns, accessor, iteratorFn, dimension
+        2. rows, accessor, iteratorFn, dimension
         """
         self.dimension = kwargs.get('dimension', 0)
         if 'spec' in kwargs.keys():
@@ -118,6 +118,9 @@ class CellMatrix:
         return self.rows
 
     def getItem(self, index):
-        raise NotImplementedError()
+        return CellArray(
+            dimension=index, rows=self.columns, accessor=self.xIndexAccess,
+            iteratorFn=RowIteratorFn
+        )
 
 ###############################################################################
