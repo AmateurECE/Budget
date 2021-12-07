@@ -7,7 +7,7 @@
 #
 # CREATED:          12/03/2021
 #
-# LAST EDITED:      12/03/2021
+# LAST EDITED:      12/06/2021
 ###
 
 from .account import Account
@@ -16,11 +16,23 @@ from .cellname import getCellNameFromCoordinates
 from .cellrange import CellMatrix
 
 class BurndownCalculator:
-    def __init__(
-            self, nonRecurringForm, beginningBalances, burndownTableSheet):
+    def __init__(self, nonRecurringForm, beginningBalances,
+                 burndownTableSheet, config):
         self.nonRecurringForm = nonRecurringForm
         self.beginningBalances = beginningBalances
         self.burndownTableSheet = burndownTableSheet
+        self.totals = {}
+        for row in config:
+            self.parseConfigRow(row)
+
+    MAX_CONFIG_COLUMNS = 2
+    def parseConfigRow(self, row):
+        """Parse a single row of configuration"""
+        firstColumn = row.getItem(0).String
+        if firstColumn.startswith('total:'):
+            secondColumn = row.getItem(1).String
+            self.totals[firstColumn.replace('total:', '')] = \
+                secondColumn.split(',')
 
     @staticmethod
     def getAccounts(beginningBalances, startDate):
@@ -41,7 +53,7 @@ class BurndownCalculator:
         return outputIter
 
     @staticmethod
-    def writeInitialBalances(outputIter, startDate, accounts):
+    def writeInitialBalances(outputIter, startDate, accounts, totals):
         initialBalance = next(outputIter)
         initialBalanceIter = iter(initialBalance)
         next(initialBalanceIter).String = startDate
@@ -50,10 +62,17 @@ class BurndownCalculator:
             cell = next(initialBalanceIter)
             cell.NumberFormat = NumberFormat.CURRENCY
             cell.Value = accounts[account].getBalance()
+        for totalName, totaledAccounts in totals.items():
+            totalBalance = 0
+            for account in totaledAccounts:
+                totalBalance += accounts[account].getBalance()
+            cell = next(initialBalanceIter)
+            cell.NumberFormat = NumberFormat.CURRENCY
+            cell.Value = totalBalance
         return outputIter
 
     @staticmethod
-    def writeBurndownTable(nonRecurringForm, outputIter, accounts):
+    def writeBurndownTable(nonRecurringForm, outputIter, accounts, totals):
         """Write transactions to burndown table"""
         for transaction in nonRecurringForm:
             entry = iter(next(outputIter))
@@ -65,6 +84,13 @@ class BurndownCalculator:
                 cell = next(entry)
                 cell.NumberFormat = NumberFormat.CURRENCY
                 cell.Value = accounts[account].getBalance()
+            for totalName, totaledAccounts in totals.items():
+                totalBalance = 0
+                for account in totaledAccounts:
+                    totalBalance += accounts[account].getBalance()
+                cell = next(entry)
+                cell.NumberFormat = NumberFormat.CURRENCY
+                cell.Value = totalBalance
 
     @staticmethod
     def writeFinalBalances(beginningBalances, accounts):
@@ -78,7 +104,8 @@ class BurndownCalculator:
         startDate = self.beginningBalances.getHeaders()[1]
         accounts = BurndownCalculator.getAccounts(self.beginningBalances,
                                                   startDate)
-        headers = ['Date', 'Description', *accounts.keys()]
+        headers = ['Date', 'Description', *accounts.keys(),
+                   *self.totals.keys()]
         numberOfEntries = self.nonRecurringForm.getCount() + 1
         bottomCorner = getCellNameFromCoordinates(
             len(headers) - 1, numberOfEntries)
@@ -88,9 +115,9 @@ class BurndownCalculator:
         # Write headers and initial balances
         outputIter = BurndownCalculator.writeInitialBalances(
             BurndownCalculator.writeHeaders(iter(burndownTable), headers),
-            startDate, accounts)
-        BurndownCalculator.writeBurndownTable(self.nonRecurringForm,
-                                              outputIter, accounts)
+            startDate, accounts, self.totals)
+        BurndownCalculator.writeBurndownTable(
+            self.nonRecurringForm, outputIter, accounts, self.totals)
         # Write final balances
         BurndownCalculator.writeFinalBalances(self.beginningBalances, accounts)
 
