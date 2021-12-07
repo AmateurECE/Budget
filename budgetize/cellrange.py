@@ -10,29 +10,67 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/03/2021
+# LAST EDITED:      12/06/2021
 ###
 
 from . import cellname
 
-RowIteratorFn = lambda index, dim, access: access.getCellByPosition(index, dim)
-ColumnIteratorFn = lambda index, dim, access: access.getCellByPosition(
-    dim, index)
+RowAccessor = lambda i, dim, access: access.getCellByPosition(i, dim)
 
-class CellListIterator:
-    def __init__(self, dim, maxIndex, xIndexAccess, iteratorFn):
-        self.dim = dim
-        self.maxIndex = maxIndex
+class CellRowIterator:
+    def __init__(self, row, columns, xIndexAccess):
+        self.row = row
+        self.columns = columns
         self.index = 0
         self.xIndexAccess = xIndexAccess
-        self.iteratorFn = iteratorFn
 
     def __next__(self):
-        if self.index >= self.maxIndex:
+        if self.index >= self.columns:
             raise StopIteration()
         index = self.index
         self.index += 1
-        return self.iteratorFn(index, self.dim, self.xIndexAccess)
+        return RowAccessor(index, self.row, self.xIndexAccess)
+
+class CellRow:
+    def __init__(self, **kwargs):
+        """Two forms, really:
+        1. spec, accessor
+        2. row, columns, accessor
+        """
+        if 'spec' in kwargs.keys():
+            self.initString(kwargs)
+        else:
+            self.initIndex(kwargs)
+
+    def initString(self, kwargs):
+        spec = kwargs.get('spec', None)
+        firstSpec, secondSpec = tuple(spec.split(':'))
+        firstColumn, firstRow = cellname.getCoordinatesFromCellName(firstSpec)
+        secondColumn, secondRow = cellname.getCoordinatesFromCellName(
+            secondSpec)
+        self.xIndexAccess = kwargs.get(
+            'accessor', None).getCellRangeByName(spec)
+        if firstRow != secondRow:
+            raise RuntimeError(f'Poorly formed spec ({spec}) for CellRow!')
+        self.columns = secondColumn - firstColumn + 1
+        self.row = firstRow
+
+    def initIndex(self, kwargs):
+        self.row = kwargs.get('row')
+        self.columns = kwargs.get('columns', None)
+        self.xIndexAccess = kwargs.get('accessor', None)
+
+    def __iter__(self):
+        return CellRowIterator(self.row, self.columns, self.xIndexAccess)
+
+    def getCount(self):
+        return self.columns
+
+    def getRow(self):
+        return self.row
+
+    def getItem(self, index):
+        return RowAccessor(index, self.row, self.xIndexAccess)
 
 class CellMatrixIterator:
     def __init__(self, rows, columns, xIndexAccess):
@@ -46,53 +84,8 @@ class CellMatrixIterator:
             raise StopIteration()
         index = self.index
         self.index += 1
-        return CellArray(
-            dimension=index, rows=self.columns, accessor=self.xIndexAccess,
-            iteratorFn=RowIteratorFn
-        )
-
-class CellArray:
-    def __init__(self, **kwargs):
-        """Two forms, really:
-        1. spec, xSheet, dimension(?)
-        2. rows, accessor, iteratorFn, dimension
-        """
-        self.dimension = kwargs.get('dimension', 0)
-        if 'spec' in kwargs.keys():
-            self.initString(kwargs)
-        else:
-            self.initIndex(kwargs)
-
-    def initString(self, kwargs):
-        spec = kwargs.get('spec', None)
-        firstSpec, secondSpec = tuple(spec.split(':'))
-        firstColumn, firstRow = cellname.getCoordinatesFromCellName(firstSpec)
-        secondColumn, secondRow = cellname.getCoordinatesFromCellName(
-            secondSpec)
-        self.xIndexAccess = kwargs.get('xSheet', None).getCellRangeByName(spec)
-        if firstRow == secondRow:
-            self.rows = secondColumn - firstColumn + 1
-            self.iteratorFn = RowIteratorFn
-        elif firstColumn == secondColumn:
-            self.rows = secondRow - firstRow + 1
-            self.iteratorFn = ColumnIteratorFn
-        else:
-            raise RuntimeError(f'Poorly formed spec ({spec}) for list!')
-
-    def initIndex(self, kwargs):
-        self.rows = kwargs.get('rows', None)
-        self.xIndexAccess = kwargs.get('accessor', None)
-        self.iteratorFn = kwargs.get('iteratorFn', None)
-
-    def __iter__(self):
-        return CellListIterator(
-            self.dimension, self.rows, self.xIndexAccess, self.iteratorFn)
-
-    def getCount(self):
-        return self.rows
-
-    def getItem(self, index):
-        return self.iteratorFn(index, self.dimension, self.xIndexAccess)
+        return CellRow(row=index, columns=self.columns,
+                       accessor=self.xIndexAccess)
 
 class CellMatrix:
     def __init__(self, spec, xSheet):
@@ -118,9 +111,7 @@ class CellMatrix:
         return self.rows
 
     def getItem(self, index):
-        return CellArray(
-            dimension=index, rows=self.columns, accessor=self.xIndexAccess,
-            iteratorFn=RowIteratorFn
-        )
+        return CellRow(row=index, columns=self.columns,
+                       accessor=self.xIndexAccess)
 
 ###############################################################################

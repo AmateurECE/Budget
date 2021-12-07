@@ -7,10 +7,10 @@
 #
 # CREATED:          12/02/2021
 #
-# LAST EDITED:      12/03/2021
+# LAST EDITED:      12/06/2021
 ###
 
-from .cellrange import CellArray, CellMatrix
+from .cellrange import CellMatrix
 from . import cellname
 
 class EmptyFormError(Exception):
@@ -54,8 +54,8 @@ class SheetTable:
             f'{topLeft}:' + cellname.getCellNameFromCoordinates(
                 topLeftColumn, cellname.ROW_MAX)
         )
-        for cell in CellArray(spec=dataProbeSpec, xSheet=xSheet):
-            if not cell.String:
+        for row in CellMatrix(spec=dataProbeSpec, xSheet=xSheet):
+            if not row.getItem(0).String:
                 break
             numberOfRows += 1
         if not numberOfRows:
@@ -81,8 +81,9 @@ class SheetTable:
 
         index = 0
         headerMap = {}
-        for cell in CellArray(spec=headerSpec, xSheet=xSheet):
-            headerMap[cell.getString()] = index
+        row = CellMatrix(spec=headerSpec, xSheet=xSheet).getItem(0)
+        for cell in row:
+            headerMap[cell.String] = index
             index += 1
         self.headers = headerMap
 
