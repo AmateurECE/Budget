@@ -10,7 +10,7 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/06/2021
+# LAST EDITED:      12/14/2021
 ###
 
 from . import cellname
@@ -37,7 +37,7 @@ class CellRow:
         1. spec, accessor
         2. row, columns, accessor
         """
-        if 'spec' in kwargs.keys():
+        if 'spec' in kwargs:
             self.initString(kwargs)
         else:
             self.initIndex(kwargs)

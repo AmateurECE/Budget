@@ -7,19 +7,21 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/06/2021
+# LAST EDITED:      12/15/2021
 ###
 
 from .burndown import BurndownCalculator
 from .cellrange import CellMatrix
 from .cellname import ROW_MAX
 from .sheet import SheetTable
+from .transaction import TransactionLedger
 
 class Budgetizer:
     def __init__(self, xSheetDoc):
         self.sheetDoc = xSheetDoc
 
-    def runBurndown(self, nonRecurringForm, beginningBalances, burndownConfig):
+    def runBurndown(self, transactions, beginningBalances, burndownConfig,
+                    startDate):
         burndownTableSheetName = "Burndown Table"
         try:
             burndownTableSheet = self.sheetDoc.getSheets().getByName(
@@ -31,9 +33,9 @@ class Budgetizer:
             self.sheetDoc.getSheets().insertByName(
                 burndownTableSheetName, burndownTableSheet)
         burndownCalculator = BurndownCalculator(
-            nonRecurringForm, beginningBalances, burndownTableSheet,
+            transactions, beginningBalances, burndownTableSheet,
             burndownConfig)
-        burndownCalculator.run()
+        burndownCalculator.run(startDate)
 
     @staticmethod
     def getConfiguration(frontSheet, configName, tableWidth):
@@ -46,11 +48,21 @@ class Budgetizer:
     def budgetize(self):
         nonRecurringForm = SheetTable(
             "A1", 4, self.sheetDoc.getSheets().getByName("Non Recurring"))
+        recurringForm = SheetTable(
+            "A1", 4, self.sheetDoc.getSheets().getByName("Recurring"))
         beginningBalances = SheetTable(
             "A1", 3, self.sheetDoc.getSheets().getByName("Balances"))
         frontSheet = self.sheetDoc.getSheets().getByName("Front")
         burndownConfig = Budgetizer.getConfiguration(
             frontSheet, 'Burndown', BurndownCalculator.MAX_CONFIG_COLUMNS)
-        self.runBurndown(nonRecurringForm, beginningBalances, burndownConfig)
+
+        ledger = TransactionLedger()
+        ledger.prepareNonRecurring(nonRecurringForm)
+        startDate = beginningBalances.getHeaders()[1]
+        endDate = beginningBalances.getHeaders()[2]
+        ledger.prepareRecurring(recurringForm, startDate, endDate)
+
+        self.runBurndown(ledger.getTransactions(), beginningBalances,
+                         burndownConfig, startDate)
 
 ###############################################################################
