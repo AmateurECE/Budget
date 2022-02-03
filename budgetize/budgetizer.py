@@ -7,9 +7,10 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/15/2021
+# LAST EDITED:      02/03/2022
 ###
 
+from .account import AccountHistorySummaryForm
 from .burndown import BurndownCalculator
 from .cellrange import CellMatrix
 from .cellname import ROW_MAX
@@ -20,22 +21,23 @@ class Budgetizer:
     def __init__(self, xSheetDoc):
         self.sheetDoc = xSheetDoc
 
-    def runBurndown(self, transactions, beginningBalances, burndownConfig,
-                    startDate):
-        burndownTableSheetName = "Burndown Table"
+    def getOrCreateSheet(self, sheetName):
         try:
-            burndownTableSheet = self.sheetDoc.getSheets().getByName(
-                burndownTableSheetName)
+            return self.sheetDoc.getSheets().getByName(sheetName)
         except Exception:
             # Must not currently be a burndown table sheet
-            burndownTableSheet = self.sheetDoc.createInstance(
+            namedSheet = self.sheetDoc.createInstance(
                 'com.sun.star.sheet.Spreadsheet')
-            self.sheetDoc.getSheets().insertByName(
-                burndownTableSheetName, burndownTableSheet)
+            self.sheetDoc.getSheets().insertByName(namedSheet, sheetName)
+            return namedSheet
+
+    def runBurndown(self, transactions, balances: AccountHistorySummaryForm,
+                    burndownConfig):
+        burndownTableSheet = self.getOrCreateSheet("Burndown Table")
         burndownCalculator = BurndownCalculator(
-            transactions, beginningBalances, burndownTableSheet,
+            transactions, balances, burndownTableSheet,
             burndownConfig)
-        burndownCalculator.run(startDate)
+        burndownCalculator.run(balances.getStartDate(), balances.getEndDate())
 
     @staticmethod
     def getConfiguration(frontSheet, configName, tableWidth):
@@ -50,19 +52,18 @@ class Budgetizer:
             "A1", 4, self.sheetDoc.getSheets().getByName("Non Recurring"))
         recurringForm = SheetTable(
             "A1", 4, self.sheetDoc.getSheets().getByName("Recurring"))
-        beginningBalances = SheetTable(
-            "A1", 3, self.sheetDoc.getSheets().getByName("Balances"))
+        balances = AccountHistorySummaryForm(SheetTable(
+            "A1", 3, self.sheetDoc.getSheets().getByName("Balances")))
         frontSheet = self.sheetDoc.getSheets().getByName("Front")
         burndownConfig = Budgetizer.getConfiguration(
             frontSheet, 'Burndown', BurndownCalculator.MAX_CONFIG_COLUMNS)
 
         ledger = TransactionLedger()
         ledger.prepareNonRecurring(nonRecurringForm)
-        startDate = beginningBalances.getHeaders()[1]
-        endDate = beginningBalances.getHeaders()[2]
+        startDate = balances.getStartDate()
+        endDate = balances.getEndDate()
         ledger.prepareRecurring(recurringForm, startDate, endDate)
 
-        self.runBurndown(ledger.getTransactions(), beginningBalances,
-                         burndownConfig, startDate)
+        self.runBurndown(ledger.getTransactions(), balances, burndownConfig)
 
 ###############################################################################

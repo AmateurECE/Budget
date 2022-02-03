@@ -7,20 +7,22 @@
 #
 # CREATED:          12/03/2021
 #
-# LAST EDITED:      12/18/2021
+# LAST EDITED:      02/03/2022
 ###
 
-from .account import Account
+from datetime import datetime
+from typing import List
+
+from .account import Account, AccountHistorySummaryForm
 from .cellformat import NumberFormat
 from .cellname import getCellNameFromCoordinates
 from .cellrange import CellMatrix
-from datetime import datetime
 
 class BurndownCalculator:
-    def __init__(self, transactions, beginningBalances, burndownTableSheet,
-                 config):
+    def __init__(self, transactions, balances: AccountHistorySummaryForm,
+                 burndownTableSheet, config):
         self.transactions = transactions
-        self.beginningBalances = beginningBalances
+        self.balances = balances
         self.burndownTableSheet = burndownTableSheet
         self.totals = {}
         for row in config:
@@ -36,11 +38,11 @@ class BurndownCalculator:
                 secondColumn.split(',')
 
     @staticmethod
-    def getAccounts(beginningBalances, startDate):
+    def getAccounts(balances: AccountHistorySummaryForm):
         """Assemble dictionary of accounts"""
         accounts = list(map(
-            lambda a: Account(a['Account'].String, a[startDate].Value),
-            beginningBalances))
+            lambda a: Account(a.getName(), a.getStartingBalance()),
+            balances.read()))
         accountNames = map(lambda a: a.getName(), accounts)
         return dict(zip(accountNames, accounts))
 
@@ -106,16 +108,14 @@ class BurndownCalculator:
                 cell.Value = totalBalance
 
     @staticmethod
-    def writeFinalBalances(beginningBalances, accounts):
-        endDate = beginningBalances.getHeaders()[2]
-        for record in beginningBalances:
-            record[endDate].NumberFormat = NumberFormat.CURRENCY
-            record[endDate].Value = accounts[
-                record['Account'].String].getBalance()
+    def writeFinalBalances(balances: AccountHistorySummaryForm,
+                           accounts: List[Account]):
+        summaries = list(map(lambda a: a.getHistorySummary(),
+                             accounts.values()))
+        balances.write(summaries)
 
-    def run(self, startDate):
-        accounts = BurndownCalculator.getAccounts(self.beginningBalances,
-                                                  startDate)
+    def run(self, startDate, endDate):
+        accounts = BurndownCalculator.getAccounts(self.balances)
         headers = ['Date', 'Description', 'Amount', 'Account',
                    *accounts.keys(), *self.totals.keys()]
         numberOfEntries = len(self.transactions) + 1
@@ -129,11 +129,10 @@ class BurndownCalculator:
             BurndownCalculator.writeHeaders(iter(burndownTable), headers),
             startDate, accounts, self.totals)
 
-        endDate = self.beginningBalances.getHeaders()[2]
         BurndownCalculator.writeBurndownTable(
             outputIter, self.transactions, accounts, self.totals, startDate,
             endDate)
         # Write final balances
-        BurndownCalculator.writeFinalBalances(self.beginningBalances, accounts)
+        BurndownCalculator.writeFinalBalances(self.balances, accounts)
 
 ###############################################################################
