@@ -7,13 +7,14 @@
 #
 # CREATED:          12/03/2021
 #
-# LAST EDITED:      12/15/2021
+# LAST EDITED:      12/18/2021
 ###
 
 from .account import Account
 from .cellformat import NumberFormat
 from .cellname import getCellNameFromCoordinates
 from .cellrange import CellMatrix
+from datetime import datetime
 
 class BurndownCalculator:
     def __init__(self, transactions, beginningBalances, burndownTableSheet,
@@ -58,6 +59,8 @@ class BurndownCalculator:
         initialBalanceIter = iter(initialBalance)
         next(initialBalanceIter).String = startDate
         next(initialBalanceIter).String = 'Starting Balance'
+        next(initialBalanceIter)
+        next(initialBalanceIter)
         for account in accounts:
             cell = next(initialBalanceIter)
             cell.NumberFormat = NumberFormat.CURRENCY
@@ -72,13 +75,21 @@ class BurndownCalculator:
         return outputIter
 
     @staticmethod
-    def writeBurndownTable(outputIter, transactions, accounts, totals):
+    def writeBurndownTable(outputIter, transactions, accounts, totals,
+                           startDate, endDate):
         """Write transactions to burndown table"""
         for transaction in transactions:
+            if transaction.date < datetime.strptime(startDate, '%m/%d/%y'):
+                continue
+            elif transaction.date > datetime.strptime(endDate, '%m/%d/%y'):
+                break
+
             entry = iter(next(outputIter))
             next(entry).String = transaction.date.strftime('%m/%d/%y')
             next(entry).String = transaction.description
+            next(entry).Value = transaction.amount
             mutatedAccountName = transaction.accountName
+            next(entry).String = mutatedAccountName
             for name, account in accounts.items():
                 cell = next(entry)
                 if name == mutatedAccountName:
@@ -105,8 +116,8 @@ class BurndownCalculator:
     def run(self, startDate):
         accounts = BurndownCalculator.getAccounts(self.beginningBalances,
                                                   startDate)
-        headers = ['Date', 'Description', *accounts.keys(),
-                   *self.totals.keys()]
+        headers = ['Date', 'Description', 'Amount', 'Account',
+                   *accounts.keys(), *self.totals.keys()]
         numberOfEntries = len(self.transactions) + 1
         bottomCorner = getCellNameFromCoordinates(
             len(headers) - 1, numberOfEntries)
@@ -118,8 +129,10 @@ class BurndownCalculator:
             BurndownCalculator.writeHeaders(iter(burndownTable), headers),
             startDate, accounts, self.totals)
 
+        endDate = self.beginningBalances.getHeaders()[2]
         BurndownCalculator.writeBurndownTable(
-            outputIter, self.transactions, accounts, self.totals)
+            outputIter, self.transactions, accounts, self.totals, startDate,
+            endDate)
         # Write final balances
         BurndownCalculator.writeFinalBalances(self.beginningBalances, accounts)
 

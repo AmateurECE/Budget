@@ -11,7 +11,8 @@ $ soffice --calc \
     --accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"
 ```
 
-Next, run the script, which will load the package and execute the budgetizer:
+(Or use the `start.sh` script). Next, run the script, which will load the
+package and execute the budgetizer:
 
 ```
 $ python3 DevelopmentRunner.py
