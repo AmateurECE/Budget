@@ -47,65 +47,24 @@ class BurndownCalculator:
         return dict(zip(accountNames, accounts))
 
     @staticmethod
-    def writeHeaders(outputIter, headers):
-        """Write out Date, Description, & balance for each account for each
-        transation in the ledger"""
-        headerRowIter = iter(next(outputIter))
-        for header in headers:
-            next(headerRowIter).String = header
-        return outputIter
-
-    @staticmethod
-    def writeInitialBalances(outputIter, startDate, accounts, totals):
-        initialBalance = next(outputIter)
-        initialBalanceIter = iter(initialBalance)
-        next(initialBalanceIter).String = startDate
-        next(initialBalanceIter).String = 'Starting Balance'
-        next(initialBalanceIter)
-        next(initialBalanceIter)
-        for account in accounts:
-            cell = next(initialBalanceIter)
-            cell.NumberFormat = NumberFormat.CURRENCY
-            cell.Value = accounts[account].getBalance()
-        for _, totaledAccounts in totals.items():
-            totalBalance = 0
-            for account in totaledAccounts:
-                totalBalance += accounts[account].getBalance()
-            cell = next(initialBalanceIter)
-            cell.NumberFormat = NumberFormat.CURRENCY
-            cell.Value = totalBalance
-        return outputIter
-
-    @staticmethod
-    def writeBurndownTable(outputIter, transactions, accounts, totals,
-                           startDate, endDate):
+    def getBurndownEntries(transactions, accounts, startDate, endDate):
         """Write transactions to burndown table"""
+        entries = []
         for transaction in transactions:
             if transaction.date < datetime.strptime(startDate, '%m/%d/%y'):
                 continue
             if transaction.date > datetime.strptime(endDate, '%m/%d/%y'):
                 break
 
-            entry = iter(next(outputIter))
-            next(entry).String = transaction.date.strftime('%m/%d/%y')
-            next(entry).String = transaction.description
-            next(entry).Value = transaction.amount
-            mutatedAccountName = transaction.accountName
-            next(entry).String = mutatedAccountName
-            for name, account in accounts.items():
-                cell = next(entry)
-                if name == mutatedAccountName:
-                    transaction.applyToAccount(account)
-                cell.NumberFormat = NumberFormat.CURRENCY
-                cell.Value = account.getBalance()
+            affectedAccount = accounts[transaction.accountName]
+            transaction.applyToAccount(affectedAccount)
 
-            for _, totaledAccounts in totals.items():
-                totalBalance = 0
-                for account in totaledAccounts:
-                    totalBalance += accounts[account].getBalance()
-                cell = next(entry)
-                cell.NumberFormat = NumberFormat.CURRENCY
-                cell.Value = totalBalance
+            # TODO: Update totals?
+            balances = list(map(lambda a: a.getBalance(), accounts.values()))
+            entries.append(BurndownEntry(
+                transaction.date, transaction.description, transaction.amount,
+                affectedAccount.getName(), balances))
+        return entries
 
     @staticmethod
     def writeFinalBalances(balances: AccountHistorySummaryForm,
@@ -116,23 +75,14 @@ class BurndownCalculator:
 
     def run(self, startDate, endDate):
         accounts = BurndownCalculator.getAccounts(self.balances)
-        headers = ['Date', 'Description', 'Amount', 'Account',
-                   *accounts.keys(), *self.totals.keys()]
-        numberOfEntries = len(self.transactions) + 1
         bottomCorner = getCellNameFromCoordinates(
-            len(headers) - 1, numberOfEntries)
-        burndownTable = CellMatrix(f'A1:{bottomCorner}',
-                                   self.burndownTableSheet)
+            4 + len(accounts) + len(self.totals) - 1,
+            len(self.transactions) + 1)
 
-        # Write headers and initial balances
-        outputIter = BurndownCalculator.writeInitialBalances(
-            BurndownCalculator.writeHeaders(iter(burndownTable), headers),
-            startDate, accounts, self.totals)
-
-        BurndownCalculator.writeBurndownTable(
-            outputIter, self.transactions, accounts, self.totals, startDate,
-            endDate)
-        # Write final balances
+        table = CellMatrix(f'A1:{bottomCorner}', self.burndownTableSheet)
+        entries = BurndownCalculator.getBurndownEntries(
+            self.transactions, accounts, startDate, endDate)
+        BurndownForm(table, accounts).write(startDate, entries)
         BurndownCalculator.writeFinalBalances(self.balances, accounts)
 
 ###############################################################################
@@ -140,11 +90,11 @@ class BurndownCalculator:
 ###
 
 class BurndownEntry:
-    def __init__(self, date, description, account, balances):
+    def __init__(self, date, description, amount, accountName, balances):
         self.date = date
         self.description = description
-        self.amount = account.getBalance()
-        self.accountName = account.getName()
+        self.amount = amount
+        self.accountName = accountName
         self.balances = balances
 
     def getDate(self):
@@ -168,7 +118,7 @@ class BurndownRecord:
 
     def write(self, entry: BurndownEntry):
         iterator = iter(self.cellrange)
-        next(iterator).String = datetime.strptime(entry.getDate(), '%m/%d/%y')
+        next(iterator).String = datetime.strftime(entry.getDate(), '%m/%d/%y')
         next(iterator).String = entry.getDescription()
         amountField = next(iterator)
         amountField.Value = entry.getAmount()
@@ -193,7 +143,8 @@ class BurndownForm:
             next(iterator).String = header
 
     @staticmethod
-    def writeInitialBalances(iterator, initialBalances):
+    def writeInitialBalances(iterator, startDate, initialBalances):
+        next(iterator).String = startDate
         next(iterator).String = 'Starting Balance'
         next(iterator)
         next(iterator)
@@ -202,13 +153,13 @@ class BurndownForm:
             balanceField.Value = balance
             balanceField.NumberFormat = NumberFormat.CURRENCY
 
-    def write(self, entries: List[BurndownRecord]):
+    def write(self, startDate, entries: List[BurndownRecord]):
         headers = ['Date', 'Description', 'Amount', 'Account',
                    *self.startingBalances.keys()]
         iterator = iter(self.cellrange)
         BurndownForm.writeHeaders(iter(next(iterator)), headers)
         BurndownForm.writeInitialBalances(
-            iter(next(iterator)), self.startingBalances.values())
+            iter(next(iterator)), startDate, self.startingBalances.values())
 
         for entry in entries:
             BurndownRecord(next(iterator)).write(entry)
