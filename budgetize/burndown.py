@@ -20,22 +20,10 @@ from .cellrange import CellMatrix, CellRow
 
 class BurndownCalculator:
     def __init__(self, transactions, balances: AccountHistorySummaryForm,
-                 burndownTableSheet, config):
+                 burndownTableSheet):
         self.transactions = transactions
         self.balances = balances
         self.burndownTableSheet = burndownTableSheet
-        self.totals = {}
-        for row in config:
-            self.parseConfigRow(row)
-
-    MAX_CONFIG_COLUMNS = 2
-    def parseConfigRow(self, row):
-        """Parse a single row of configuration"""
-        firstColumn = row.getItem(0).String
-        if firstColumn.startswith('total:'):
-            secondColumn = row.getItem(1).String
-            self.totals[firstColumn.replace('total:', '')] = \
-                secondColumn.split(',')
 
     @staticmethod
     def getAccounts(balances: AccountHistorySummaryForm):
@@ -59,11 +47,8 @@ class BurndownCalculator:
             affectedAccount = accounts[transaction.accountName]
             transaction.applyToAccount(affectedAccount)
 
-            # TODO: Update totals?
             balances = list(map(lambda a: a.getBalance(), accounts.values()))
-            entries.append(BurndownEntry(
-                transaction.date, transaction.description, transaction.amount,
-                affectedAccount.getName(), balances))
+            entries.append(BurndownEntry(transaction, balances))
         return entries
 
     @staticmethod
@@ -76,7 +61,7 @@ class BurndownCalculator:
     def run(self, startDate, endDate):
         accounts = BurndownCalculator.getAccounts(self.balances)
         bottomCorner = getCellNameFromCoordinates(
-            4 + len(accounts) + len(self.totals) - 1,
+            4 + len(accounts) + - 1,
             len(self.transactions) + 1)
 
         table = CellMatrix(f'A1:{bottomCorner}', self.burndownTableSheet)
@@ -90,11 +75,11 @@ class BurndownCalculator:
 ###
 
 class BurndownEntry:
-    def __init__(self, date, description, amount, accountName, balances):
-        self.date = date
-        self.description = description
-        self.amount = amount
-        self.accountName = accountName
+    def __init__(self, transaction, balances):
+        self.date = transaction.date
+        self.description = transaction.description
+        self.amount = transaction.amount
+        self.accountName = transaction.accountName
         self.balances = balances
 
     def getDate(self):

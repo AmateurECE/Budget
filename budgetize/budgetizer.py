@@ -32,12 +32,10 @@ class Budgetizer:
             self.sheetDoc.getSheets().insertByName(namedSheet, sheetName)
             return namedSheet
 
-    def runBurndown(self, transactions, balances: AccountHistorySummaryForm,
-                    burndownConfig):
+    def runBurndown(self, transactions, balances: AccountHistorySummaryForm):
         burndownTableSheet = self.getOrCreateSheet("Burndown Table")
         burndownCalculator = BurndownCalculator(
-            transactions, balances, burndownTableSheet,
-            burndownConfig)
+            transactions, balances, burndownTableSheet)
         burndownCalculator.run(balances.getStartDate(), balances.getEndDate())
 
     @staticmethod
@@ -55,15 +53,11 @@ class Budgetizer:
             "A1", 4, self.sheetDoc.getSheets().getByName("Recurring")))
         balances = AccountHistorySummaryForm(SheetTable(
             "A1", 3, self.sheetDoc.getSheets().getByName("Balances")))
-        frontSheet = self.sheetDoc.getSheets().getByName("Front")
-        burndownConfig = Budgetizer.getConfiguration(
-            frontSheet, 'Burndown', BurndownCalculator.MAX_CONFIG_COLUMNS)
 
         ledger = TransactionLedger(recurringForm, nonRecurringForm)
         startDate = balances.getStartDate()
         endDate = balances.getEndDate()
 
-        self.runBurndown(ledger.getTransactions(startDate, endDate), balances,
-                         burndownConfig)
+        self.runBurndown(ledger.getTransactions(startDate, endDate), balances)
 
 ###############################################################################
