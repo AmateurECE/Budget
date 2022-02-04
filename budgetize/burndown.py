@@ -16,7 +16,7 @@ from typing import List
 from .account import Account, AccountHistorySummaryForm
 from .cellformat import NumberFormat
 from .cellname import getCellNameFromCoordinates
-from .cellrange import CellMatrix
+from .cellrange import CellMatrix, CellRow
 
 class BurndownCalculator:
     def __init__(self, transactions, balances: AccountHistorySummaryForm,
@@ -134,5 +134,83 @@ class BurndownCalculator:
             endDate)
         # Write final balances
         BurndownCalculator.writeFinalBalances(self.balances, accounts)
+
+###############################################################################
+# BurndownForm
+###
+
+class BurndownEntry:
+    def __init__(self, date, description, account, balances):
+        self.date = date
+        self.description = description
+        self.amount = account.getBalance()
+        self.accountName = account.getName()
+        self.balances = balances
+
+    def getDate(self):
+        return self.date
+
+    def getDescription(self):
+        return self.description
+
+    def getAmount(self):
+        return self.amount
+
+    def getAccountName(self):
+        return self.accountName
+
+    def getBalances(self):
+        return self.balances
+
+class BurndownRecord:
+    def __init__(self, cellrange: CellRow):
+        self.cellrange = cellrange
+
+    def write(self, entry: BurndownEntry):
+        iterator = iter(self.cellrange)
+        next(iterator).String = datetime.strptime(entry.getDate(), '%m/%d/%y')
+        next(iterator).String = entry.getDescription()
+        amountField = next(iterator)
+        amountField.Value = entry.getAmount()
+        amountField.NumberFormat = NumberFormat.CURRENCY
+        next(iterator).String = entry.getAccountName()
+
+        for balance in entry.getBalances():
+            balanceField = next(iterator)
+            balanceField.Value = balance
+            balanceField.NumberFormat = NumberFormat.CURRENCY
+
+class BurndownForm:
+    def __init__(self, cellrange: CellMatrix, accounts: dict[str, Account]):
+        self.cellrange = cellrange
+        self.startingBalances = {}
+        for name in accounts:
+            self.startingBalances[name] = accounts[name].getBalance()
+
+    @staticmethod
+    def writeHeaders(iterator, headers):
+        for header in headers:
+            next(iterator).String = header
+
+    @staticmethod
+    def writeInitialBalances(iterator, initialBalances):
+        next(iterator).String = 'Starting Balance'
+        next(iterator)
+        next(iterator)
+        for balance in initialBalances:
+            balanceField = next(iterator)
+            balanceField.Value = balance
+            balanceField.NumberFormat = NumberFormat.CURRENCY
+
+    def write(self, entries: List[BurndownRecord]):
+        headers = ['Date', 'Description', 'Amount', 'Account',
+                   *self.startingBalances.keys()]
+        iterator = iter(self.cellrange)
+        BurndownForm.writeHeaders(iter(next(iterator)), headers)
+        BurndownForm.writeInitialBalances(
+            iter(next(iterator)), self.startingBalances.values())
+
+        for entry in entries:
+            BurndownRecord(next(iterator)).write(entry)
 
 ###############################################################################
