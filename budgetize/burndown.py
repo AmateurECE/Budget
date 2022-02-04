@@ -83,7 +83,7 @@ class BurndownCalculator:
         for transaction in transactions:
             if transaction.date < datetime.strptime(startDate, '%m/%d/%y'):
                 continue
-            elif transaction.date > datetime.strptime(endDate, '%m/%d/%y'):
+            if transaction.date > datetime.strptime(endDate, '%m/%d/%y'):
                 break
 
             entry = iter(next(outputIter))

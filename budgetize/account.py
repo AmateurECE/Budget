@@ -12,7 +12,7 @@
 
 from typing import List
 
-from .cellrange import CellRow, CellMatrix
+from .cellrange import CellRow
 from .sheet import SheetTable
 from .cellformat import NumberFormat
 

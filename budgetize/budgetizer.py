@@ -15,7 +15,8 @@ from .burndown import BurndownCalculator
 from .cellrange import CellMatrix
 from .cellname import ROW_MAX
 from .sheet import SheetTable
-from .transaction import TransactionLedger
+from .transaction import TransactionLedger, RecurringTransactionForm, \
+    TransactionForm
 
 class Budgetizer:
     def __init__(self, xSheetDoc):
@@ -48,22 +49,21 @@ class Budgetizer:
         return None
 
     def budgetize(self):
-        nonRecurringForm = SheetTable(
-            "A1", 4, self.sheetDoc.getSheets().getByName("Non Recurring"))
-        recurringForm = SheetTable(
-            "A1", 4, self.sheetDoc.getSheets().getByName("Recurring"))
+        nonRecurringForm = TransactionForm(SheetTable(
+            "A1", 4, self.sheetDoc.getSheets().getByName("Non Recurring")))
+        recurringForm = RecurringTransactionForm(SheetTable(
+            "A1", 4, self.sheetDoc.getSheets().getByName("Recurring")))
         balances = AccountHistorySummaryForm(SheetTable(
             "A1", 3, self.sheetDoc.getSheets().getByName("Balances")))
         frontSheet = self.sheetDoc.getSheets().getByName("Front")
         burndownConfig = Budgetizer.getConfiguration(
             frontSheet, 'Burndown', BurndownCalculator.MAX_CONFIG_COLUMNS)
 
-        ledger = TransactionLedger()
-        ledger.prepareNonRecurring(nonRecurringForm)
+        ledger = TransactionLedger(recurringForm, nonRecurringForm)
         startDate = balances.getStartDate()
         endDate = balances.getEndDate()
-        ledger.prepareRecurring(recurringForm, startDate, endDate)
 
-        self.runBurndown(ledger.getTransactions(), balances, burndownConfig)
+        self.runBurndown(ledger.getTransactions(startDate, endDate), balances,
+                         burndownConfig)
 
 ###############################################################################
