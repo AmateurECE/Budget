@@ -16,45 +16,31 @@ from .cellrange import CellRow
 from .sheet import SheetTable
 from .cellformat import NumberFormat
 
-class Account:
-    def __init__(self, name, balance):
-        self.name = name
-        self.startingBalance = balance
-        self.currentBalance = balance
-
-    def updateBalance(self, diff):
-        self.currentBalance += diff
-
-    def getName(self):
-        return self.name
-
-    def getBalance(self):
-        return self.currentBalance
-
-    def getHistorySummary(self):
-        return AccountHistorySummary(self.name, self.startingBalance,
-                                     self.currentBalance)
-
 class AccountHistorySummary:
     """Contains only necessary information about an account history"""
-    def __init__(self, name, startingBalance, currentBalance,
-                 expectedEndBalance):
+    def __init__(self, name, startingBalance):
         self.name = name
         self.startingBalance = startingBalance
-        self.currentBalance = currentBalance
-        self.expectedEndBalance = expectedEndBalance
+        self.currentBalance = startingBalance
+        self.expectedEndBalance = startingBalance
 
-    def getName(self):
+    def getAccountName(self):
         return self.name
 
     def getStartingBalance(self):
         return self.startingBalance
 
-    def getCurrentBalance(self):
-        return self.endingBalance
-
     def getExpectedEndBalance(self):
         return self.expectedEndBalance
+
+    def getCurrentBalance(self):
+        return self.currentBalance
+
+    def updateBalance(self, diff):
+        self.currentBalance += diff
+
+    def updateExpectedBalance(self, diff):
+        self.expectedEndBalance += diff
 
 class AccountHistorySummaryRecord:
     """Deals with persistence of a single AccountHistorySummary instance"""
@@ -65,14 +51,11 @@ class AccountHistorySummaryRecord:
         iterator = iter(self.cellrange)
         name = next(iterator).String
         startingBalance = next(iterator).Value
-        endingBalance = next(iterator).Value
-        expectedEndBalance = next(iterator).Value
-        return AccountHistorySummary(name, startingBalance, endingBalance,
-                                     expectedEndBalance)
+        return AccountHistorySummary(name, startingBalance)
 
     def write(self, summary: AccountHistorySummary):
         iterator = iter(self.cellrange)
-        next(iterator).String = summary.getName()
+        next(iterator).String = summary.getAccountName()
 
         startingBalanceCell = next(iterator)
         startingBalanceCell.NumberFormat = NumberFormat.CURRENCY

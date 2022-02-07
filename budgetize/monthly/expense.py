@@ -7,7 +7,7 @@
 #
 # CREATED:          02/06/2022
 #
-# LAST EDITED:      02/06/2022
+# LAST EDITED:      02/07/2022
 ###
 
 from datetime import datetime
@@ -87,7 +87,7 @@ class MonthlyExpenseSheet:
             MonthlyExpenseRecord(next(rowIter)).write(expense)
 
     def read(self) -> List[MonthlyExpense]:
-        sheetTable = SheetTable('A1', 4, self.sheet)
+        sheetTable = SheetTable('A1', 5, self.sheet)
         expenses = []
         for row in sheetTable:
             expenses.append(MonthlyExpenseRecord(row).read())

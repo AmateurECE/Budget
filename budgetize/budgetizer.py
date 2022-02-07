@@ -18,7 +18,8 @@ from appdirs import user_data_dir
 import uno
 from com.sun.star.container import NoSuchElementException
 
-from .monthly.budget import MonthlyBudgetSheet, MonthlyBudget
+from .monthly.budget import MonthlyBudget
+from .monthly.forms import MonthlyBudgetSheet
 from .monthly.expense import MonthlyExpenseSheet, MonthlyExpense
 
 APP_NAME = 'Budgetizer'
@@ -62,6 +63,8 @@ class Budgetizer:
     def budgetize(self):
         (budget, budgetSheet) = self.initBudgetSheet()
         expenses = self.initExpensesSheet()
+        budget.calculateExpectedBalances()
+        budget.applyExpenses(expenses)
         MonthlyBudgetSheet(budgetSheet).write(budget)
 
 ###############################################################################

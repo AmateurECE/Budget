@@ -33,7 +33,7 @@ class BudgetedExpense:
         return self.spent
 
     def spend(self, amount):
-        self.spend - amount
+        self.spent - amount
 
 class BudgetedExpenseRecord:
     def __init__(self, cellrange: CellRow):
