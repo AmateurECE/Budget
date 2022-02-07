@@ -18,6 +18,7 @@ from datetime import datetime
 
 from ..account import Account, AccountHistorySummary, \
     AccountHistorySummaryRecord
+from ..cellformat import NumberFormat
 from ..cellrange import CellMatrix, CellMatrixIterator
 from ..cellname import getCellNameFromCoordinates, COLUMN_MAX, ROW_MAX
 from ..expense import BudgetedExpense, BudgetedExpenseRecord
@@ -31,19 +32,35 @@ class ExpenseSubForm:
     def read(self) -> Dict[str, List[BudgetedExpense]]:
         pass
 
+    def writeTotals(self, iterator, totals: List[float]):
+        for total in totals:
+            totalCell = next(iterator)
+            totalCell.CharWeight = BOLD
+            totalCell.NumberFormat = NumberFormat.CURRENCY
+            totalCell.Value = total
+
     def write(self, expenses: Dict[str, List[BudgetedExpense]]):
         expensesTitle = iter(next(self.rowIterator))
         next(expensesTitle)
         for header in ["Budgeted", "Spent", "Remaining"]:
             expensesTitleCell = next(expensesTitle)
-            expensesTitleCell.String = header
             expensesTitleCell.CharWeight = BOLD
+            expensesTitleCell.String = header
         for section in expenses:
-            sectionTitleCell = next(self.rowIterator).getItem(0)
-            sectionTitleCell.String = section
+            sectionHeaderIter = iter(next(self.rowIterator))
+            sectionTitleCell = next(sectionHeaderIter)
             sectionTitleCell.CharWeight = BOLD
+            sectionTitleCell.String = section
+
+            budgeted = 0.0
+            spent = 0.0
             for expense in expenses[section]:
                 BudgetedExpenseRecord(next(self.rowIterator)).write(expense)
+                budgeted += expense.getBudgeted()
+                spent += expense.getSpent()
+
+            self.writeTotals(
+                sectionHeaderIter, [budgeted, spent, budgeted - spent])
             next(self.rowIterator)
         return self.rowIterator
 
@@ -55,11 +72,18 @@ class IncomeSubForm:
         raise NotImplementedError()
 
     def write(self, incomes: List[Income]):
-        sectionTitleCell = next(self.rowIterator).getItem(0)
+        sectionTitleIter = iter(next(self.rowIterator))
+        sectionTitleCell = next(sectionTitleIter)
         sectionTitleCell.String = "Incomes"
         sectionTitleCell.CharWeight = BOLD
+        totalIncome = 0
         for income in incomes:
             IncomeRecord(next(self.rowIterator)).write(income)
+            totalIncome += income.getAmount()
+        totalCell = next(sectionTitleIter)
+        totalCell.CharWeight = BOLD
+        totalCell.NumberFormat = NumberFormat.CURRENCY
+        totalCell.Value = totalIncome
         return self.rowIterator
 
 class AccountHistorySummarySubForm:
@@ -106,7 +130,8 @@ class MonthlyBudget:
         for section in defaults.sections():
             if "Incomes" == section:
                 for income in defaults[section]:
-                    incomes.append(Income(income, defaults[section][income]))
+                    incomes.append(Income(
+                        income, float(defaults[section][income])))
             else:
                 expenses[section] = []
                 for expense in defaults[section]:
