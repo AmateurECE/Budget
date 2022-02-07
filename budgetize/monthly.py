@@ -57,6 +57,11 @@ class MonthlyBudgetSheet:
 
     @staticmethod
     def writeExpenses(rowIterator, expenses):
+        expensesTitle = iter(next(rowIterator))
+        for header in ["Expenses", "Budgeted"]:
+            expensesTitleCell = next(expensesTitle)
+            expensesTitleCell.String = header
+            expensesTitleCell.CharWeight = BOLD
         for section in expenses:
             sectionTitleCell = next(rowIterator).getItem(0)
             sectionTitleCell.String = section
