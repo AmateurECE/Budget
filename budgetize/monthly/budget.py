@@ -7,7 +7,7 @@
 #
 # CREATED:          02/06/2022
 #
-# LAST EDITED:      02/06/2022
+# LAST EDITED:      02/07/2022
 ###
 
 from configparser import ConfigParser
@@ -98,7 +98,7 @@ class AccountHistorySummarySubForm:
 
     def write(self, summaries: List[AccountHistorySummary]):
         headerRow = iter(next(self.rowIterator))
-        headers = ["Account", "Starting Balance", "Current Balance",
+        headers = ["Account", "Type", "Starting Balance", "Current Balance",
                    "Expected Period End Balance"]
         for header in headers:
             headerCell = next(headerRow)
