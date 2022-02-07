@@ -42,6 +42,17 @@ class MonthlyBudget:
     def getSinkingFunds(self) -> List[SinkingFund]:
         return self.funds
 
+    def getBudgetedIncome(self, income: MonthlyExpense):
+        income = next(filter(
+            lambda x: x.getDescription() == income.getDescription(),
+            self.incomes), None)
+        if not income:
+            raise RuntimeError(
+                f'The transaction {income.getDescription()} was not an '
+                + 'expected income'
+            )
+        return income
+
     def getBudgetedExpense(self, expense: MonthlyExpense):
         try:
             category = next(filter(lambda x: x == expense.getCategory(),
@@ -66,7 +77,7 @@ class MonthlyBudget:
         return next(filter(lambda x: x.getAccountName() == accountName,
                            self.accountSummaries), None)
 
-    def ensureAccounts(self, budgetedExpense, expense):
+    def ensureAccountsForExpense(self, budgetedExpense, expense):
         if budgetedExpense.getAccountName() != expense.getAccountName():
             raise RuntimeError(
                 f'{budgetedExpense.getDescription()} should come out of '
@@ -74,17 +85,38 @@ class MonthlyBudget:
                 + f'came out of {expense.getAccountName()}'
             )
 
+    def ensureAccountsForIncome(self, budgetedIncome, income):
+        if budgetedIncome.getAccountName() != income.getAccountName():
+            raise RuntimeError(
+                f'{budgetedIncome.getDescription()} should go into '
+                + f'{budgetedIncome.getAccountName()}, but it actually '
+                + f'came went into {income.getAccountName()}'
+            )
+
+    def applyIncomeTransaction(self, income: MonthlyExpense):
+        budgetedIncome = self.getBudgetedIncome(income)
+        self.ensureAccountsForIncome(budgetedIncome, income)
+        account = self.getAccountByName(budgetedIncome.getAccountName())
+        budgetedIncome.receive(income.getAmount())
+        account.updateBalance(income.getAmount())
+
+    def applyExpenseTransaction(self, expense: MonthlyExpense):
+        budgetedExpense = self.getBudgetedExpense(expense)
+        self.ensureAccountsForExpense(budgetedExpense, expense)
+        account = self.getAccountByName(budgetedExpense.getAccountName())
+        budgetedExpense.spend(expense.getAmount())
+        account.updateBalance(expense.getAmount())
+
     def applyExpenses(self, expenses: List[MonthlyExpense]):
         now = datetime.now()
         for expense in expenses:
             if expense.getDate() > now:
                 continue # Skip expenses that haven't happened yet.
 
-            budgetedExpense = self.getBudgetedExpense(expense)
-            self.ensureAccounts(budgetedExpense, expense)
-            account = self.getAccountByName(budgetedExpense.getAccountName())
-            budgetedExpense.spend(expense.getAmount())
-            account.updateBalance(expense.getAmount())
+            if expense.getAmount() < 0:
+                self.applyExpenseTransaction(expense)
+            else:
+                self.applyIncomeTransaction(expense)
 
     def calculateExpectedBalances(self):
         if not self.accountSummaries:
