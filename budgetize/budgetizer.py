@@ -7,7 +7,7 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      02/06/2022
+# LAST EDITED:      02/07/2022
 ###
 
 import calendar
@@ -35,17 +35,16 @@ class Budgetizer:
         sheetName = getMonthName() + ' Budget'
         try:
             monthlySheet = self.sheetDoc.getSheets().getByName(sheetName)
+            monthlyBudget = MonthlyBudgetSheet(monthlySheet).read()
         except NoSuchElementException:
             monthlySheet = self.sheetDoc.createInstance(
                 'com.sun.star.sheet.Spreadsheet')
             self.sheetDoc.getSheets().insertByName(sheetName, monthlySheet)
-        # TODO: Put these under the except branch
-        config = ConfigParser()
-        config.optionxform=str
-        config.read(user_data_dir(APP_NAME, APP_AUTHOR) + '/defaults.ini')
-        monthlyBudget = MonthlyBudget.defaults(config)
-        MonthlyBudgetSheet(monthlySheet).write(monthlyBudget)
-        return monthlyBudget
+            config = ConfigParser()
+            config.optionxform=str
+            config.read(user_data_dir(APP_NAME, APP_AUTHOR) + '/defaults.ini')
+            monthlyBudget = MonthlyBudget.defaults(config)
+        return (monthlyBudget, monthlySheet)
 
     def initExpensesSheet(self):
         sheetName = getMonthName() + ' Expenses'
@@ -61,7 +60,8 @@ class Budgetizer:
         return monthlyExpenses
 
     def budgetize(self):
-        budget = self.initBudgetSheet()
+        (budget, budgetSheet) = self.initBudgetSheet()
         expenses = self.initExpensesSheet()
+        MonthlyBudgetSheet(budgetSheet).write(budget)
 
 ###############################################################################

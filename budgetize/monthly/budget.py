@@ -22,6 +22,7 @@ from ..cellformat import NumberFormat
 from ..cellrange import CellMatrix, CellMatrixIterator
 from ..cellname import getCellNameFromCoordinates, COLUMN_MAX, ROW_MAX
 from ..expense import BudgetedExpense, BudgetedExpenseRecord
+from ..fund import SinkingFund, SinkingFundRecord
 from ..income import Income, IncomeRecord
 from ..sheet import clearSheet
 
@@ -109,12 +110,34 @@ class AccountHistorySummarySubForm:
             AccountHistorySummaryRecord(next(self.rowIterator)).write(summary)
         return self.rowIterator
 
+class SinkingFundSubForm:
+    def __init__(self, iterator: CellMatrixIterator):
+        self.rowIterator = iterator
+
+    def read(self) -> List[SinkingFund]:
+        raise NotImplementedError()
+
+    def write(self, funds: List[SinkingFund]):
+        headerRow = iter(next(self.rowIterator))
+        headers = ["Sinking Fund", "Account", "Starting Balance",
+                   "Current Balance", "Expected Period End Balance"]
+        for header in headers:
+            headerCell = next(headerRow)
+            headerCell.CharWeight = BOLD
+            headerCell.String = header
+
+        for fund in funds:
+            SinkingFundRecord(next(self.rowIterator)).write(fund)
+        return self.rowIterator
+
 class MonthlyBudget:
     def __init__(self, expenses: Dict[str, List[BudgetedExpense]],
-                 incomes: List[Income], accounts: List[Account]):
+                 incomes: List[Income], accounts: List[Account],
+                 funds: List[SinkingFund]):
         self.expenses = expenses
         self.incomes = incomes
         self.accounts = accounts
+        self.funds = funds
 
     def getExpenseSections(self) -> Dict[str, List[BudgetedExpense]]:
         return self.expenses
@@ -124,6 +147,9 @@ class MonthlyBudget:
 
     def getAccounts(self) -> List[Account]:
         return self.accounts
+
+    def getSinkingFunds(self) -> List[SinkingFund]:
+        return self.funds
 
     @staticmethod
     def defaults(defaults: ConfigParser):
@@ -139,7 +165,7 @@ class MonthlyBudget:
                 for expense in defaults[section]:
                     expenses[section].append(BudgetedExpense(
                         expense, "", float(defaults[section][expense])))
-        return MonthlyBudget(expenses, incomes, [])
+        return MonthlyBudget(expenses, incomes, [], [])
 
 class MonthlyBudgetSheet:
     """Monthly budget form"""
@@ -157,6 +183,8 @@ class MonthlyBudgetSheet:
         rowIterator = IncomeSubForm(rowIterator).write(budget.getIncomes())
         next(rowIterator)
         AccountHistorySummarySubForm(rowIterator).write(budget.getAccounts())
+        next(rowIterator)
+        SinkingFundSubForm(rowIterator).write(budget.getSinkingFunds())
 
     def read(self) -> MonthlyBudget:
         raise NotImplementedError()
