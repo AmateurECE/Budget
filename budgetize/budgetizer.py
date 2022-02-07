@@ -18,7 +18,8 @@ from appdirs import user_data_dir
 import uno
 from com.sun.star.container import NoSuchElementException
 
-from .monthly import MonthlyBudgetSheet, MonthlyBudget
+from .monthly.budget import MonthlyBudgetSheet, MonthlyBudget
+from .monthly.expense import MonthlyExpenseSheet, MonthlyExpense
 
 APP_NAME = 'Budgetizer'
 APP_AUTHOR = "edtwardy"
@@ -30,7 +31,7 @@ class Budgetizer:
     def __init__(self, xSheetDoc):
         self.sheetDoc = xSheetDoc
 
-    def budgetize(self):
+    def initBudgetSheet(self):
         sheetName = getMonthName() + ' Budget'
         try:
             monthlySheet = self.sheetDoc.getSheets().getByName(sheetName)
@@ -44,5 +45,23 @@ class Budgetizer:
         config.read(user_data_dir(APP_NAME, APP_AUTHOR) + '/defaults.ini')
         monthlyBudget = MonthlyBudget.defaults(config)
         MonthlyBudgetSheet(monthlySheet).write(monthlyBudget)
+        return monthlyBudget
+
+    def initExpensesSheet(self):
+        sheetName = getMonthName() + ' Expenses'
+        try:
+            expenseSheet = self.sheetDoc.getSheets().getByName(sheetName)
+            monthlyExpenses = MonthlyExpenseSheet(expenseSheet).read()
+        except NoSuchElementException:
+            expenseSheet = self.sheetDoc.createInstance(
+                'com.sun.star.sheet.Spreadsheet')
+            self.sheetDoc.getSheets().insertByName(sheetName, expenseSheet)
+            monthlyExpenses = []
+            MonthlyExpenseSheet(expenseSheet).write(monthlyExpenses)
+        return monthlyExpenses
+
+    def budgetize(self):
+        budget = self.initBudgetSheet()
+        expenses = self.initExpensesSheet()
 
 ###############################################################################

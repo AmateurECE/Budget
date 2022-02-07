@@ -10,7 +10,7 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/14/2021
+# LAST EDITED:      02/06/2022
 ###
 
 from . import cellname
@@ -29,7 +29,10 @@ class CellRowIterator:
             raise StopIteration()
         index = self.index
         self.index += 1
-        return RowAccessor(index, self.row, self.xIndexAccess)
+        cell = RowAccessor(index, self.row, self.xIndexAccess)
+        cell.__dict__['position'] = \
+            f'{cellname.getColumnNameFromIndex(index)}{self.row + 1}'
+        return cell
 
 class CellRow:
     def __init__(self, **kwargs):
