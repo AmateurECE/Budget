@@ -22,8 +22,10 @@ from ..cellrange import CellMatrix, CellRow
 from ..sheet import SheetTable
 
 class MonthlyExpense:
-    def __init__(self, description, category, date, amount, accountName):
+    def __init__(self, description, lineItem, category, date, amount,
+                 accountName):
         self.description = description
+        self.lineItem = lineItem
         self.category = category
         self.date = date
         self.amount = amount
@@ -31,6 +33,9 @@ class MonthlyExpense:
 
     def getDescription(self):
         return self.description
+
+    def getLineItem(self):
+        return self.lineItem
 
     def getCategory(self):
         return self.category
@@ -51,15 +56,18 @@ class MonthlyExpenseRecord:
     def read(self) -> MonthlyExpense:
         recordIter = iter(self.cellrange)
         description = next(recordIter).String
+        lineItem = next(recordIter).String
         category = next(recordIter).String
         date = datetime.strptime(next(recordIter).String, '%m/%d/%y')
         amount = next(recordIter).Value
         accountName = next(recordIter).String
-        return MonthlyExpense(description, category, date, amount, accountName)
+        return MonthlyExpense(description, lineItem, category, date, amount,
+                              accountName)
 
     def write(self, expense: MonthlyExpense):
         recordIter = iter(self.cellrange)
         next(recordIter).String = expense.getDescription()
+        next(recordIter).String = expense.getLineItem()
         next(recordIter).String = expense.getCategory()
         next(recordIter).String = datetime.strftime(
             expense.getDate(), '%m/%d/%y')
@@ -79,7 +87,8 @@ class MonthlyExpenseSheet:
     def write(self, expenses: List[MonthlyExpense]):
         rowIter = iter(self.cellrange)
         recordIter = iter(next(rowIter))
-        for header in ["Description", "Category", "Date", "Amount", "Account"]:
+        for header in ["Description", "Line Item", "Category", "Date",
+                       "Amount", "Account"]:
             headerCell = next(recordIter)
             headerCell.String = header
             headerCell.CharWeight = BOLD
@@ -87,7 +96,7 @@ class MonthlyExpenseSheet:
             MonthlyExpenseRecord(next(rowIter)).write(expense)
 
     def read(self) -> List[MonthlyExpense]:
-        sheetTable = SheetTable('A1', 5, self.sheet)
+        sheetTable = SheetTable('A1', 6, self.sheet)
         expenses = []
         for row in sheetTable:
             expenses.append(MonthlyExpenseRecord(row).read())

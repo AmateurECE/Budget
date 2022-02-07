@@ -10,15 +10,17 @@
 # LAST EDITED:      02/07/2022
 ###
 
+import math
+
 from .cellformat import NumberFormat
 from .cellrange import CellRow
 
 class BudgetedExpense:
-    def __init__(self, description, accountName, budgeted, spent):
+    def __init__(self, description, accountName, budgeted):
         self.description = description
         self.accountName = accountName
         self.budgeted = budgeted
-        self.spent = spent
+        self.spent = 0
 
     def getDescription(self):
         return self.description
@@ -33,7 +35,7 @@ class BudgetedExpense:
         return self.spent
 
     def spend(self, amount):
-        self.spent - amount
+        self.spent += math.fabs(amount)
 
 class BudgetedExpenseRecord:
     def __init__(self, cellrange: CellRow):
@@ -61,7 +63,6 @@ class BudgetedExpenseRecord:
         description = next(recordIterator).String
         accountName = next(recordIterator).String
         budgeted = next(recordIterator).Value
-        spent = next(recordIterator).Value
-        return BudgetedExpense(description, accountName, budgeted, spent)
+        return BudgetedExpense(description, accountName, budgeted)
 
 ###############################################################################
