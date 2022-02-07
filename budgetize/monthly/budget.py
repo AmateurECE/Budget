@@ -14,8 +14,11 @@ from configparser import ConfigParser
 import uno
 from com.sun.star.awt.FontWeight import BOLD
 from typing import Dict, List
+from datetime import datetime
 
-from ..cellrange import CellMatrix
+from ..account import Account, AccountHistorySummary, \
+    AccountHistorySummaryRecord
+from ..cellrange import CellMatrix, CellMatrixIterator
 from ..cellname import getCellNameFromCoordinates, COLUMN_MAX, ROW_MAX
 from ..expense import BudgetedExpense, BudgetedExpenseRecord
 from ..income import Income, IncomeRecord
@@ -45,7 +48,7 @@ class ExpenseSubForm:
         return self.rowIterator
 
 class IncomeSubForm:
-    def __init__(self, iterator: CellMatrix):
+    def __init__(self, iterator: CellMatrixIterator):
         self.rowIterator = iterator
 
     def read(self) -> List[Income]:
@@ -57,18 +60,44 @@ class IncomeSubForm:
         sectionTitleCell.CharWeight = BOLD
         for income in incomes:
             IncomeRecord(next(self.rowIterator)).write(income)
+        return self.rowIterator
+
+class AccountHistorySummarySubForm:
+    """Deals with persistence of a list of AccountHistorySummary instances"""
+    def __init__(self, iterator: CellMatrixIterator):
+        self.rowIterator = iterator
+
+    def read(self) -> (List[AccountHistorySummary], datetime, datetime):
+        raise NotImplementedError()
+
+    def write(self, summaries: List[AccountHistorySummary]):
+        headerRow = iter(next(self.rowIterator))
+        headers = ["Account", "Starting Balance", "Current Balance",
+                   "Expected Period End Balance"]
+        for header in headers:
+            headerCell = next(headerRow)
+            headerCell.CharWeight = BOLD
+            headerCell.String = header
+
+        for summary in summaries:
+            AccountHistorySummaryRecord(next(self.rowIterator)).write(summary)
+        return self.rowIterator
 
 class MonthlyBudget:
     def __init__(self, expenses: Dict[str, List[BudgetedExpense]],
-                 incomes: List[Income]):
+                 incomes: List[Income], accounts: List[Account]):
         self.expenses = expenses
         self.incomes = incomes
+        self.accounts = accounts
 
     def getExpenseSections(self) -> Dict[str, List[BudgetedExpense]]:
         return self.expenses
 
     def getIncomes(self) -> List[Income]:
         return self.incomes
+
+    def getAccounts(self) -> List[Account]:
+        return self.accounts
 
     @staticmethod
     def defaults(defaults: ConfigParser):
@@ -83,7 +112,7 @@ class MonthlyBudget:
                 for expense in defaults[section]:
                     expenses[section].append(BudgetedExpense(
                         expense, float(defaults[section][expense])))
-        return MonthlyBudget(expenses, incomes)
+        return MonthlyBudget(expenses, incomes, [])
 
 class MonthlyBudgetSheet:
     """Monthly budget form"""
@@ -97,7 +126,10 @@ class MonthlyBudgetSheet:
         rowIterator = iter(self.cellrange)
         rowIterator = ExpenseSubForm(rowIterator).write(
             budget.getExpenseSections())
+        next(rowIterator)
         rowIterator = IncomeSubForm(rowIterator).write(budget.getIncomes())
+        next(rowIterator)
+        AccountHistorySummarySubForm(rowIterator).write(budget.getAccounts())
 
     def read(self) -> MonthlyBudget:
         raise NotImplementedError()

@@ -7,7 +7,7 @@
 #
 # CREATED:          12/03/2021
 #
-# LAST EDITED:      02/03/2022
+# LAST EDITED:      02/06/2022
 ###
 
 from typing import List
@@ -37,10 +37,12 @@ class Account:
 
 class AccountHistorySummary:
     """Contains only necessary information about an account history"""
-    def __init__(self, name, startingBalance, endingBalance):
+    def __init__(self, name, startingBalance, currentBalance,
+                 expectedEndBalance):
         self.name = name
         self.startingBalance = startingBalance
-        self.endingBalance = endingBalance
+        self.currentBalance = currentBalance
+        self.expectedEndBalance = expectedEndBalance
 
     def getName(self):
         return self.name
@@ -48,8 +50,11 @@ class AccountHistorySummary:
     def getStartingBalance(self):
         return self.startingBalance
 
-    def getEndingBalance(self):
+    def getCurrentBalance(self):
         return self.endingBalance
+
+    def getExpectedEndBalance(self):
+        return self.expectedEndBalance
 
 class AccountHistorySummaryRecord:
     """Deals with persistence of a single AccountHistorySummary instance"""
@@ -71,33 +76,12 @@ class AccountHistorySummaryRecord:
         startingBalanceCell.NumberFormat = NumberFormat.CURRENCY
         startingBalanceCell.Value = summary.getStartingBalance()
 
-        endingBalanceCell = next(iterator)
-        endingBalanceCell.NumberFormat = NumberFormat.CURRENCY
-        endingBalanceCell.Value = summary.getEndingBalance()
+        currentBalanceCell = next(iterator)
+        currentBalanceCell.NumberFormat = NumberFormat.CURRENCY
+        currentBalanceCell.Value = summary.getCurrentBalance()
 
-class AccountHistorySummaryForm:
-    """Deals with persistence of a list of AccountHistorySummary instances"""
-    def __init__(self, cellrange: SheetTable):
-        self.cellrange = cellrange
-        headers = cellrange.getHeaders()
-        self.startDate = headers[1]
-        self.endDate = headers[2]
-
-    def getStartDate(self):
-        return self.startDate
-
-    def getEndDate(self):
-        return self.endDate
-
-    def read(self) -> List[AccountHistorySummary]:
-        result = []
-        for row in self.cellrange:
-            result.append(AccountHistorySummaryRecord(row).read())
-        return result
-
-    def write(self, summaries: List[AccountHistorySummary]):
-        iterator = iter(self.cellrange)
-        for summary in summaries:
-            AccountHistorySummaryRecord(next(iterator)).write(summary)
+        expectedEndBalanceCell = next(iterator)
+        expectedEndBalanceCell.NumberFormat = NumberFormat.CURRENCY
+        expectedEndBalanceCell.Value = summary.getExpectedEndBalance()
 
 ###############################################################################
