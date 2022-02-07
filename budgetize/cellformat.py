@@ -7,10 +7,13 @@
 #
 # CREATED:          12/03/2021
 #
-# LAST EDITED:      12/03/2021
+# LAST EDITED:      02/06/2022
 ###
 
+from com.sun.star.util import NumberFormat
+
 class NumberFormat:
-    CURRENCY = 104
+    CURRENCY = NumberFormat.CURRENCY | NumberFormat.SCIENTIFIC \
+        | NumberFormat.FRACTION
 
 ###############################################################################

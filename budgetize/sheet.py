@@ -7,11 +7,31 @@
 #
 # CREATED:          12/02/2021
 #
-# LAST EDITED:      12/06/2021
+# LAST EDITED:      02/06/2022
 ###
+
+import uno
+from com.sun.star.container import NoSuchElementException
+from com.sun.star.sheet import CellFlags
 
 from .cellrange import CellMatrix
 from . import cellname
+
+def getOrCreateSheet(sheetsDocument, sheetName):
+    try:
+        return sheetsDocument.getSheets().getByName(sheetName)
+    except NoSuchElementException:
+        # Must not currently be a burndown table sheet
+        namedSheet = sheetsDocument.createInstance(
+            'com.sun.star.sheet.Spreadsheet')
+        sheetsDocument.getSheets().insertByName(sheetName, namedSheet)
+        return namedSheet
+
+def clearSheet(sheet):
+    flags = CellFlags.VALUE | CellFlags.DATETIME | CellFlags.STRING \
+        | CellFlags.HARDATTR | CellFlags.STYLES | CellFlags.OBJECTS \
+        | CellFlags.EDITATTR | CellFlags.FORMATTED
+    sheet.clearContents(flags)
 
 class EmptyFormError(Exception):
     pass
