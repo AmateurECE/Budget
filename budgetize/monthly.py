@@ -52,13 +52,11 @@ class MonthlyBudgetSheet:
     """Monthly budget form"""
     def __init__(self, sheet):
         self.sheet = sheet
-
-    def write(self, budget: MonthlyBudget):
-        clearSheet(self.sheet)
         cellspec = f'A1:{getCellNameFromCoordinates(COLUMN_MAX, ROW_MAX)}'
-        cellrange = CellMatrix(cellspec, self.sheet)
-        rowIterator = iter(cellrange)
-        expenses = budget.getExpenseSections()
+        self.cellrange = CellMatrix(cellspec, sheet)
+
+    @staticmethod
+    def writeExpenses(rowIterator, expenses):
         for section in expenses:
             sectionTitleCell = next(rowIterator).getItem(0)
             sectionTitleCell.String = section
@@ -67,12 +65,20 @@ class MonthlyBudgetSheet:
                 BudgetedExpenseRecord(next(rowIterator)).write(expense)
             next(rowIterator)
 
+    @staticmethod
+    def writeIncomes(rowIterator, incomes):
         sectionTitleCell = next(rowIterator).getItem(0)
         sectionTitleCell.String = "Incomes"
         sectionTitleCell.CharWeight = BOLD
-        incomes = budget.getIncomes()
         for income in incomes:
             IncomeRecord(next(rowIterator)).write(income)
+
+    def write(self, budget: MonthlyBudget):
+        clearSheet(self.sheet)
+        rowIterator = iter(self.cellrange)
+        MonthlyBudgetSheet.writeExpenses(
+            rowIterator, budget.getExpenseSections())
+        MonthlyBudgetSheet.writeIncomes(rowIterator, budget.getIncomes())
 
     def read(self) -> MonthlyBudget:
         raise NotImplementedError()
