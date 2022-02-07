@@ -14,12 +14,16 @@ from .cellformat import NumberFormat
 from .cellrange import CellRow
 
 class Income:
-    def __init__(self, description: str, amount: float):
+    def __init__(self, description: str, accountName: str, amount: float):
         self.description = description
+        self.accountName = accountName
         self.amount = amount
 
     def getDescription(self):
         return self.description
+
+    def getAccountName(self):
+        return self.accountName
 
     def getAmount(self):
         return self.amount
@@ -31,6 +35,7 @@ class IncomeRecord:
     def write(self, income: Income):
         recordIterator = iter(self.cellrange)
         next(recordIterator).String = income.getDescription()
+        next(recordIterator).String = income.getAccountName()
         valueCell = next(recordIterator)
         valueCell.Value = income.getAmount()
         valueCell.NumberFormat = NumberFormat.CURRENCY

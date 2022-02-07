@@ -42,7 +42,7 @@ class ExpenseSubForm:
     def write(self, expenses: Dict[str, List[BudgetedExpense]]):
         expensesTitle = iter(next(self.rowIterator))
         next(expensesTitle)
-        for header in ["Budgeted", "Spent", "Remaining"]:
+        for header in ["Account", "Budgeted", "Spent", "Remaining"]:
             expensesTitleCell = next(expensesTitle)
             expensesTitleCell.CharWeight = BOLD
             expensesTitleCell.String = header
@@ -59,6 +59,7 @@ class ExpenseSubForm:
                 budgeted += expense.getBudgeted()
                 spent += expense.getSpent()
 
+            next(sectionHeaderIter)
             self.writeTotals(
                 sectionHeaderIter, [budgeted, spent, budgeted - spent])
             next(self.rowIterator)
@@ -80,6 +81,7 @@ class IncomeSubForm:
         for income in incomes:
             IncomeRecord(next(self.rowIterator)).write(income)
             totalIncome += income.getAmount()
+        next(sectionTitleIter)
         totalCell = next(sectionTitleIter)
         totalCell.CharWeight = BOLD
         totalCell.NumberFormat = NumberFormat.CURRENCY
@@ -131,12 +133,12 @@ class MonthlyBudget:
             if "Incomes" == section:
                 for income in defaults[section]:
                     incomes.append(Income(
-                        income, float(defaults[section][income])))
+                        income, "", float(defaults[section][income])))
             else:
                 expenses[section] = []
                 for expense in defaults[section]:
                     expenses[section].append(BudgetedExpense(
-                        expense, float(defaults[section][expense])))
+                        expense, "", float(defaults[section][expense])))
         return MonthlyBudget(expenses, incomes, [])
 
 class MonthlyBudgetSheet:

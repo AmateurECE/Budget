@@ -14,13 +14,17 @@ from .cellformat import NumberFormat
 from .cellrange import CellRow
 
 class BudgetedExpense:
-    def __init__(self, description, budgeted):
+    def __init__(self, description, accountName, budgeted):
         self.description = description
+        self.accountName = accountName
         self.budgeted = budgeted
         self.spent = 0
 
     def getDescription(self):
         return self.description
+
+    def getAccountName(self):
+        return self.accountName
 
     def getBudgeted(self):
         return self.budgeted
@@ -38,6 +42,7 @@ class BudgetedExpenseRecord:
     def write(self, expense: BudgetedExpense):
         recordIterator = iter(self.cellrange)
         next(recordIterator).String = expense.getDescription()
+        next(recordIterator).String = expense.getAccountName()
 
         budgetedCell = next(recordIterator)
         budgetedCell.Value = expense.getBudgeted()
