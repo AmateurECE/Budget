@@ -7,7 +7,7 @@
 #
 # CREATED:          02/06/2022
 #
-# LAST EDITED:      02/06/2022
+# LAST EDITED:      02/07/2022
 ###
 
 from configparser import ConfigParser
@@ -27,11 +27,24 @@ from ..income import Income, IncomeRecord
 from ..sheet import clearSheet
 
 class ExpenseSubForm:
-    def __init__(self, iterator: CellMatrix):
+    def __init__(self, iterator: CellMatrixIterator):
         self.rowIterator = iterator
 
-    def read(self) -> Dict[str, List[BudgetedExpense]]:
-        pass
+    def read(self) -> (CellMatrixIterator, Dict[str, List[BudgetedExpense]]):
+        next(self.rowIterator) # Eat the header row
+        currentRow = next(self.rowIterator)
+        expensesBySection = {}
+        while currentRow.getItem(4).String:
+            sectionName = currentRow.getItem(0).String
+            currentRow = next(self.rowIterator)
+            expenses = []
+            while currentRow.getItem(0).String:
+                expenses.append(BudgetedExpenseRecord(currentRow).read())
+                currentRow = next(self.rowIterator)
+            if sectionName:
+                expensesBySection[sectionName] = expenses
+            currentRow = next(self.rowIterator)
+        return (expensesBySection, self.rowIterator)
 
     def writeTotals(self, iterator, totals: List[float]):
         for total in totals:
@@ -71,7 +84,12 @@ class IncomeSubForm:
         self.rowIterator = iterator
 
     def read(self) -> List[Income]:
-        raise NotImplementedError()
+        currentRow = next(self.rowIterator)
+        incomes = []
+        while currentRow.getItem(0).String:
+            incomes.append(IncomeRecord(currentRow).read())
+            currentRow = next(self.rowIterator)
+        return incomes, self.rowIterator
 
     def write(self, incomes: List[Income]):
         sectionTitleIter = iter(next(self.rowIterator))
@@ -95,7 +113,12 @@ class AccountHistorySummarySubForm:
         self.rowIterator = iterator
 
     def read(self) -> (List[AccountHistorySummary], datetime, datetime):
-        raise NotImplementedError()
+        currentRow = next(self.rowIterator)
+        accounts = []
+        while currentRow.getItem(0).String:
+            accounts.append(AccountHistorySummaryRecord(currentRow).read())
+            currentRow = next(self.rowIterator)
+        return accounts, self.rowIterator
 
     def write(self, summaries: List[AccountHistorySummary]):
         headerRow = iter(next(self.rowIterator))
@@ -115,7 +138,12 @@ class SinkingFundSubForm:
         self.rowIterator = iterator
 
     def read(self) -> List[SinkingFund]:
-        raise NotImplementedError()
+        currentRow = next(self.rowIterator)
+        funds = []
+        while currentRow.getItem(0).String:
+            funds.append(SinkingFundRecord(currentRow).read())
+            currentRow = next(self.rowIterator)
+        return funds, self.rowIterator
 
     def write(self, funds: List[SinkingFund]):
         headerRow = iter(next(self.rowIterator))
@@ -164,7 +192,7 @@ class MonthlyBudget:
                 expenses[section] = []
                 for expense in defaults[section]:
                     expenses[section].append(BudgetedExpense(
-                        expense, "", float(defaults[section][expense])))
+                        expense, "", float(defaults[section][expense]), 0.0))
         return MonthlyBudget(expenses, incomes, [], [])
 
 class MonthlyBudgetSheet:
@@ -187,6 +215,15 @@ class MonthlyBudgetSheet:
         SinkingFundSubForm(rowIterator).write(budget.getSinkingFunds())
 
     def read(self) -> MonthlyBudget:
-        raise NotImplementedError()
+        rowIterator = iter(self.cellrange)
+        expenses, rowIterator = ExpenseSubForm(rowIterator).read()
+        next(rowIterator)
+        incomes, rowIterator = IncomeSubForm(rowIterator).read()
+        next(rowIterator)
+        accounts, rowIterator = AccountHistorySummarySubForm(
+            rowIterator).read()
+        next(rowIterator)
+        funds, _ = SinkingFundSubForm(rowIterator).read()
+        return MonthlyBudget(expenses, incomes, accounts, funds)
 
 ###############################################################################

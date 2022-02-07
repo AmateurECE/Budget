@@ -7,18 +7,18 @@
 #
 # CREATED:          02/06/2022
 #
-# LAST EDITED:      02/06/2022
+# LAST EDITED:      02/07/2022
 ###
 
 from .cellformat import NumberFormat
 from .cellrange import CellRow
 
 class BudgetedExpense:
-    def __init__(self, description, accountName, budgeted):
+    def __init__(self, description, accountName, budgeted, spent):
         self.description = description
         self.accountName = accountName
         self.budgeted = budgeted
-        self.spent = 0
+        self.spent = spent
 
     def getDescription(self):
         return self.description
@@ -57,6 +57,11 @@ class BudgetedExpenseRecord:
         remainingCell.NumberFormat = NumberFormat.CURRENCY
 
     def read(self) -> BudgetedExpense:
-        raise NotImplementedError()
+        recordIterator = iter(self.cellrange)
+        description = next(recordIterator).String
+        accountName = next(recordIterator).String
+        budgeted = next(recordIterator).Value
+        spent = next(recordIterator).Value
+        return BudgetedExpense(description, accountName, budgeted, spent)
 
 ###############################################################################

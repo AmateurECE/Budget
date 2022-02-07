@@ -7,7 +7,7 @@
 #
 # CREATED:          12/03/2021
 #
-# LAST EDITED:      02/06/2022
+# LAST EDITED:      02/07/2022
 ###
 
 from typing import List
@@ -66,7 +66,9 @@ class AccountHistorySummaryRecord:
         name = next(iterator).String
         startingBalance = next(iterator).Value
         endingBalance = next(iterator).Value
-        return AccountHistorySummary(name, startingBalance, endingBalance)
+        expectedEndBalance = next(iterator).Value
+        return AccountHistorySummary(name, startingBalance, endingBalance,
+                                     expectedEndBalance)
 
     def write(self, summary: AccountHistorySummary):
         iterator = iter(self.cellrange)

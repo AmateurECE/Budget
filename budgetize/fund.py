@@ -10,19 +10,20 @@
 # LAST EDITED:      02/07/2022
 ###
 
+from .cellformat import NumberFormat
 from .cellrange import CellRow
 
 class SinkingFund:
     def __init__(self, description, accountName, startingBalance,
                  currentBalance, expectedEndBalance):
-        self.name = name
+        self.description = description
         self.accountName = accountName
         self.startingBalance = startingBalance
         self.currentBalance = currentBalance
         self.expectedEndBalance = expectedEndBalance
 
-    def getName(self):
-        return self.name
+    def getDescription(self):
+        return self.description
 
     def getAccountName(self):
         return self.accountName
@@ -31,7 +32,7 @@ class SinkingFund:
         return self.startingBalance
 
     def getCurrentBalance(self):
-        return self.endingBalance
+        return self.currentBalance
 
     def getExpectedEndBalance(self):
         return self.expectedEndBalance
@@ -58,6 +59,13 @@ class SinkingFundRecord:
         expectedEndBalanceCell.Value = fund.getExpectedEndBalance()
 
     def read(self) -> SinkingFund:
-        raise NotImplementedError()
+        recordIterator = iter(self.cellrange)
+        description = next(recordIterator).String
+        accountName = next(recordIterator).String
+        startingBalance = next(recordIterator).Value
+        endingBalance = next(recordIterator).Value
+        expectedEndBalance = next(recordIterator).Value
+        return SinkingFund(description, accountName, startingBalance,
+                           endingBalance, expectedEndBalance)
 
 ###############################################################################

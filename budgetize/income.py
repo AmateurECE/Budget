@@ -7,7 +7,7 @@
 #
 # CREATED:          02/06/2022
 #
-# LAST EDITED:      02/06/2022
+# LAST EDITED:      02/07/2022
 ###
 
 from .cellformat import NumberFormat
@@ -31,6 +31,13 @@ class Income:
 class IncomeRecord:
     def __init__(self, cellrange: CellRow):
         self.cellrange = cellrange
+
+    def read(self) -> Income:
+        recordIterator = iter(self.cellrange)
+        description = next(recordIterator).String
+        accountName = next(recordIterator).String
+        amount = next(recordIterator).Value
+        return Income(description, accountName, amount)
 
     def write(self, income: Income):
         recordIterator = iter(self.cellrange)
