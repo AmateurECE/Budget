@@ -102,6 +102,7 @@ class IncomeSubForm:
         self.rowIterator = iterator
 
     def read(self) -> List[Income]:
+        next(self.rowIterator) # Eat the header row
         currentRow = next(self.rowIterator)
         incomes = []
         while currentRow.getItem(0).String:
@@ -109,20 +110,36 @@ class IncomeSubForm:
             currentRow = next(self.rowIterator)
         return incomes, self.rowIterator
 
+    def writeHeaders(self, iterator):
+        for header in ["Incomes", "", "Expected", "Received"]:
+            sectionTitleCell = next(iterator)
+            sectionTitleCell.String = header
+            sectionTitleCell.CharWeight = BOLD
+
     def write(self, incomes: List[Income]):
-        sectionTitleIter = iter(next(self.rowIterator))
-        sectionTitleCell = next(sectionTitleIter)
-        sectionTitleCell.String = "Incomes"
-        sectionTitleCell.CharWeight = BOLD
-        totalIncome = 0
+        iterator = self.writeHeaders(iter(next(self.rowIterator)))
+        totalRowIterator = iter(next(self.rowIterator))
+        totalCell = next(totalRowIterator)
+        totalCell.String = "Total"
+        totalCell.CharWeight = BOLD
+
+        totalExpected = 0.0
+        totalReceived = 0.0
         for income in incomes:
             IncomeRecord(next(self.rowIterator)).write(income)
-            totalIncome += income.getAmount()
-        next(sectionTitleIter)
-        totalCell = next(sectionTitleIter)
+            totalExpected += income.getAmount()
+            totalReceived += income.getReceived()
+
+        next(totalRowIterator)
+        totalCell = next(totalRowIterator)
         totalCell.CharWeight = BOLD
         totalCell.NumberFormat = NumberFormat.CURRENCY
-        totalCell.Value = totalIncome
+        totalCell.Value = totalExpected
+
+        totalCell = next(totalRowIterator)
+        totalCell.CharWeight = BOLD
+        totalCell.NumberFormat = NumberFormat.CURRENCY
+        totalCell.Value = totalReceived
         return self.rowIterator
 
 class AccountHistorySummarySubForm:

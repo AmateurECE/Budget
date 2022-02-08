@@ -18,6 +18,7 @@ class Income:
         self.description = description
         self.accountName = accountName
         self.amount = amount
+        self.received = 0.0
 
     def getDescription(self):
         return self.description
@@ -27,6 +28,12 @@ class Income:
 
     def getAmount(self):
         return self.amount
+
+    def receive(self, amount):
+        self.received += amount
+
+    def getReceived(self):
+        return self.received
 
 class IncomeRecord:
     def __init__(self, cellrange: CellRow):
@@ -43,8 +50,12 @@ class IncomeRecord:
         recordIterator = iter(self.cellrange)
         next(recordIterator).String = income.getDescription()
         next(recordIterator).String = income.getAccountName()
-        valueCell = next(recordIterator)
-        valueCell.Value = income.getAmount()
-        valueCell.NumberFormat = NumberFormat.CURRENCY
+        expectedCell = next(recordIterator)
+        expectedCell.NumberFormat = NumberFormat.CURRENCY
+        expectedCell.Value = income.getAmount()
+
+        receivedCell = next(recordIterator)
+        receivedCell.NumberFormat = NumberFormat.CURRENCY
+        receivedCell.Value = income.getReceived()
 
 ###############################################################################

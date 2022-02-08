@@ -74,8 +74,11 @@ class MonthlyBudget:
                                + ' currently accounted for in the budget!')
 
     def getAccountByName(self, accountName) -> AccountHistorySummary:
-        return next(filter(lambda x: x.getAccountName() == accountName,
-                           self.accountSummaries), None)
+        account = next(filter(lambda x: x.getAccountName() == accountName,
+                              self.accountSummaries), None)
+        if not account:
+            raise RuntimeError(f'No account named {accountName}')
+        return account
 
     def ensureAccountsForExpense(self, budgetedExpense, expense):
         if budgetedExpense.getAccountName() != expense.getAccountName():
