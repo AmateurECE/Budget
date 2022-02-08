@@ -34,6 +34,7 @@ class ExpenseSubForm:
 
     def read(self) -> (CellMatrixIterator, Dict[str, List[BudgetedExpense]]):
         next(self.rowIterator) # Eat the header row
+        next(self.rowIterator) # Eat the total row
         currentRow = next(self.rowIterator)
         expensesBySection = {}
         while currentRow.getItem(4).String:
@@ -48,6 +49,20 @@ class ExpenseSubForm:
             currentRow = next(self.rowIterator)
         return (expensesBySection, self.rowIterator)
 
+    def writeHeaders(self, iterator: CellMatrixIterator):
+        titleRow = iter(next(iterator))
+        secondTitleRow = iter(next(iterator))
+        for header in ["Expenses", "Account", "Budgeted", "Spent",
+                       "Remaining"]:
+            expensesTitleCell = next(titleRow)
+            expensesTitleCell.CharWeight = BOLD
+            expensesTitleCell.String = header
+        totalCell = next(secondTitleRow)
+        totalCell.String = "Total"
+        totalCell.CharWeight = BOLD
+        next(secondTitleRow)
+        return secondTitleRow
+
     def writeTotals(self, iterator, totals: List[float]):
         for total in totals:
             totalCell = next(iterator)
@@ -56,12 +71,9 @@ class ExpenseSubForm:
             totalCell.Value = total
 
     def write(self, expenses: Dict[str, List[BudgetedExpense]]):
-        expensesTitle = iter(next(self.rowIterator))
-        next(expensesTitle)
-        for header in ["Account", "Budgeted", "Spent", "Remaining"]:
-            expensesTitleCell = next(expensesTitle)
-            expensesTitleCell.CharWeight = BOLD
-            expensesTitleCell.String = header
+        totalTitleRowIter = self.writeHeaders(self.rowIterator)
+        totalBudgeted = 0.0
+        totalSpent = 0.0
         for section in expenses:
             sectionHeaderIter = iter(next(self.rowIterator))
             sectionTitleCell = next(sectionHeaderIter)
@@ -75,10 +87,14 @@ class ExpenseSubForm:
                 budgeted += expense.getBudgeted()
                 spent += expense.getSpent()
 
+            totalBudgeted += budgeted
+            totalSpent += spent
             next(sectionHeaderIter)
             self.writeTotals(
                 sectionHeaderIter, [budgeted, spent, budgeted - spent])
             next(self.rowIterator)
+        self.writeTotals(totalTitleRowIter, [totalBudgeted, totalSpent,
+                                             totalBudgeted - totalSpent])
         return self.rowIterator
 
 class IncomeSubForm:
