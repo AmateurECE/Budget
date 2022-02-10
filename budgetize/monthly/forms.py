@@ -24,6 +24,7 @@ from ..expense import BudgetedExpense, BudgetedExpenseRecord
 from ..fund import SinkingFund, SinkingFundRecord
 from ..income import Income, IncomeRecord
 from ..sheet import clearSheet
+from ..loan import Loan, LoanRecord
 
 from .expense import MonthlyExpense
 from .budget import MonthlyBudget
@@ -193,6 +194,29 @@ class SinkingFundSubForm:
             SinkingFundRecord(next(self.rowIterator)).write(fund)
         return self.rowIterator
 
+class LoanSubForm:
+    def __init__(self, rowIterator: CellMatrixIterator):
+        self.rowIterator = rowIterator
+
+    def read(self) -> (List[Loan], CellMatrixIterator):
+        currentRow = next(self.rowIterator)
+        loans = []
+        while currentRow.getItem(0).String:
+            loans.append(LoanRecord(currentRow).read())
+            currentRow = next(self.rowIterator)
+        return loans, self.rowIterator
+
+    def write(self, loans: List[Loan]) -> CellMatrixIterator:
+        headerRow = iter(next(self.rowIterator))
+        for header in ["Loan", "Interest", "Starting Balance",
+                       "Ending Balance", "Est. Payoff Period"]:
+            headerCell = next(headerRow)
+            headerCell.CharWeight = BOLD
+            headerCell.String = header
+        for loan in loans:
+            LoanRecord(next(self.rowIterator)).write(loan)
+        return self.rowIterator
+
 class MonthlyBudgetSheet:
     """Monthly budget form"""
     def __init__(self, sheet):
@@ -212,6 +236,8 @@ class MonthlyBudgetSheet:
             budget.getAccountSummaries())
         next(rowIterator)
         SinkingFundSubForm(rowIterator).write(budget.getSinkingFunds())
+        next(rowIterator)
+        LoanSubForm(rowIterator).write(budget.getLoans())
 
     def read(self) -> MonthlyBudget:
         rowIterator = iter(self.cellrange)
@@ -222,7 +248,9 @@ class MonthlyBudgetSheet:
         accounts, rowIterator = AccountHistorySummarySubForm(
             rowIterator).read()
         next(rowIterator)
-        funds, _ = SinkingFundSubForm(rowIterator).read()
-        return MonthlyBudget(expenses, incomes, accounts, funds)
+        funds, rowIterator = SinkingFundSubForm(rowIterator).read()
+        next(rowIterator)
+        loans, _ = LoanSubForm(rowIterator).read()
+        return MonthlyBudget(expenses, incomes, accounts, funds, loans)
 
 ###############################################################################
