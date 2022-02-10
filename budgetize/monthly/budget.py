@@ -7,7 +7,7 @@
 #
 # CREATED:          02/07/2022
 #
-# LAST EDITED:      02/08/2022
+# LAST EDITED:      02/09/2022
 ###
 
 from configparser import ConfigParser
@@ -49,15 +49,15 @@ class MonthlyBudget:
         return self.loans
 
     def getBudgetedIncome(self, income: MonthlyExpense):
-        income = next(filter(
-            lambda x: x.getDescription() == income.getDescription(),
+        budgeted = next(filter(
+            lambda x: x.getDescription() == income.getLineItem(),
             self.incomes), None)
-        if not income:
+        if not budgeted:
             raise RuntimeError(
-                f'The transaction {income.getDescription()} was not an '
+                f'The transaction {income.getLineItem()} was not an '
                 + 'expected income'
             )
-        return income
+        return budgeted
 
     def getBudgetedExpense(self, expense: MonthlyExpense):
         try:
