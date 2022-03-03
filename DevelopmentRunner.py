@@ -11,15 +11,25 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      12/03/2021
+# LAST EDITED:      03/02/2022
 ###
 
+from datetime import datetime
+import calendar
+import argparse
 import code
 import uno
 from budgetize.budgetizer import Budgetizer
 
+def getMonthName():
+    return calendar.month_name[datetime.now().month]
+
 def main():
     """Run the Budgetizer attached to a running Office server instance"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--month', required=False,
+                        default=getMonthName())
+    args = parser.parse_args()
     localContext = uno.getComponentContext()
     resolver = localContext.ServiceManager.createInstanceWithContext(
         'com.sun.star.bridge.UnoUrlResolver', localContext)
@@ -29,7 +39,7 @@ def main():
         'com.sun.star.frame.Desktop', context)
     xSheetDoc = desktop.getCurrentComponent()
     # code.interact(local=dict(globals(), **locals()))
-    budgetizer = Budgetizer(xSheetDoc)
+    budgetizer = Budgetizer(xSheetDoc, args.month)
     budgetizer.budgetize()
 
 if __name__ == '__main__':

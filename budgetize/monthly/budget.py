@@ -7,7 +7,7 @@
 #
 # CREATED:          02/07/2022
 #
-# LAST EDITED:      02/09/2022
+# LAST EDITED:      03/02/2022
 ###
 
 from configparser import ConfigParser
@@ -94,19 +94,30 @@ class MonthlyBudget:
         return loan
 
     def ensureAccountsForExpense(self, budgetedExpense, expense):
-        if budgetedExpense.getAccountName() != expense.getAccountName():
-            raise RuntimeError(
-                f'{budgetedExpense.getDescription()} should come out of '
-                + f'{budgetedExpense.getAccountName()}, but it actually '
-                + f'came out of {expense.getAccountName()}'
-            )
+        matches = re.fullmatch(r'transfer\(([^,]*),([^,]*)\)',
+                               budgetedExpense.getAccountName())
+        if matches:
+            account = matches.group(1)
+            if account != expense.getAccountName():
+                raise RuntimeError(
+                    f'{budgetedExpense.getDescription()} should go into '
+                    + f'{account}, but it actually '
+                    + f'came from {expense.getAccountName()}'
+                )
+        else:
+            if budgetedExpense.getAccountName() != expense.getAccountName():
+                raise RuntimeError(
+                    f'{budgetedExpense.getDescription()} should go into '
+                    + f'{budgetedExpense.getAccountName()}, but it actually '
+                    + f'came from {expense.getAccountName()}'
+                )
 
     def ensureAccountsForIncome(self, budgetedIncome, income):
         if budgetedIncome.getAccountName() != income.getAccountName():
             raise RuntimeError(
                 f'{budgetedIncome.getDescription()} should go into '
                 + f'{budgetedIncome.getAccountName()}, but it actually '
-                + f'came went into {income.getAccountName()}'
+                + f'went into {income.getAccountName()}'
             )
 
     def applyIncomeTransaction(self, income: MonthlyExpense):
@@ -119,7 +130,7 @@ class MonthlyBudget:
     def applyExpenseTransaction(self, expense: MonthlyExpense):
         budgetedExpense = self.getBudgetedExpense(expense)
         self.ensureAccountsForExpense(budgetedExpense, expense)
-        account = self.getAccountByName(budgetedExpense.getAccountName())
+        account = self.getAccountByName(expense.getAccountName())
         budgetedExpense.spend(expense.getAmount())
         account.updateBalance(expense.getAmount())
 
@@ -174,7 +185,7 @@ class MonthlyBudget:
                 expenses[section] = []
                 for expense in defaults[section]:
                     expenses[section].append(BudgetedExpense(
-                        expense, "", float(defaults[section][expense]), 0.0))
+                        expense, "", float(defaults[section][expense])))
         return MonthlyBudget(expenses, incomes, [], [], [])
 
 ###############################################################################

@@ -7,13 +7,10 @@
 #
 # CREATED:          12/01/2021
 #
-# LAST EDITED:      02/07/2022
+# LAST EDITED:      03/02/2022
 ###
 
-import calendar
-from datetime import datetime
 from configparser import ConfigParser
-
 from appdirs import user_data_dir
 import uno
 from com.sun.star.container import NoSuchElementException
@@ -25,15 +22,13 @@ from .monthly.expense import MonthlyExpenseSheet, MonthlyExpense
 APP_NAME = 'Budgetizer'
 APP_AUTHOR = "edtwardy"
 
-def getMonthName():
-    return calendar.month_name[datetime.now().month]
-
 class Budgetizer:
-    def __init__(self, xSheetDoc):
+    def __init__(self, xSheetDoc, month):
         self.sheetDoc = xSheetDoc
+        self.month = month
 
     def initBudgetSheet(self):
-        sheetName = getMonthName() + ' Budget'
+        sheetName = self.month + ' Budget'
         try:
             monthlySheet = self.sheetDoc.getSheets().getByName(sheetName)
             monthlyBudget = MonthlyBudgetSheet(monthlySheet).read()
@@ -48,7 +43,7 @@ class Budgetizer:
         return (monthlyBudget, monthlySheet)
 
     def initExpensesSheet(self):
-        sheetName = getMonthName() + ' Expenses'
+        sheetName = self.month + ' Expenses'
         try:
             expenseSheet = self.sheetDoc.getSheets().getByName(sheetName)
             monthlyExpenses = MonthlyExpenseSheet(expenseSheet).read()
